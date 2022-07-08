@@ -10,7 +10,7 @@ A simple module with quick setup and different options to implement anti-spam fe
 ---
 To install this module type the following command in your console:
 ```
-npm i discordjs-antispam
+npm i @devraelfreeze/discordjs-antispam
 ```
 
 ## Example
