@@ -87,7 +87,7 @@ const Logger = require('leekslazylogger');
  * @property {number} [maxDuplicatesBan=11] Amount of duplicate messages that trigger a ban.
  *
  * @property {number} [unMuteTime='0'] Time in minutes to wait until unmuting a user.
- * @property {string|Snowflake} [modLogsChannelName='mod-logs'] Name or ID of the channel in which moderation logs will be sent.
+ * @property {string|Snowflake} [modLogsChannel='mod-logs'] Name or ID of the channel in which moderation logs will be sent.
  * @property {boolean} [modLogsEnabled=false] Whether moderation logs are enabled.
  *
  * @property {string|MessageEmbed} [warnMessage='{@user}, Please stop spamming.'] Message that will be sent in the channel when someone is warned.
@@ -132,6 +132,7 @@ const Logger = require('leekslazylogger');
 
 /**
  * Cache data for the AntiSpamClient
+ * Cache is unique per guild.
  * @typedef AntiSpamCache
  *
  * @property {Snowflake[]} warnedUsers Array of warned users.
@@ -179,7 +180,7 @@ class AntiSpamClient extends EventEmitter {
 
             unMuteTime: options.unMuteTime * 60_000 || 300000,
 
-            modLogsChannelName: options.modLogsChannelName || 'mod-logs',
+            modLogsChannel: options.modLogsChannel || 'CHANNEL_ID',
             modLogsEnabled: options.modLogsEnabled || false,
 
             warnMessage: options.warnMessage || '{@user}, Please stop spamming.',
@@ -252,19 +253,16 @@ class AntiSpamClient extends EventEmitter {
         /**
          * The cache for this AntiSpam client instance
          * @type {AntiSpamCache}
-         */
-        this.cache = {
+         * // Structure:
+         * guild_ID: {
             messages: [],
             warnedUsers: [],
             kickedUsers: [],
             bannedUsers: []
         }
-
-        /**
-         * The cache for Guilds Options for AntiSpam Instance
-         * @type {Collection<Snowflake, AntiSpamOptions>}
          */
-        this.guildOptions = new Collection();
+        this.cache = new Collection();
+
     }
 
 
@@ -301,8 +299,8 @@ class AntiSpamClient extends EventEmitter {
      */
     async logs (msg, action) {
         if (this.options.modLogsEnabled) {
-            const modLogChannel = this.client.channels.cache.get(this.options.modLogsChannelName) ||
-                msg.guild.channels.cache.find((channel) => channel.name === this.options.modLogsChannelName && channel.type === 'GUILD_TEXT')
+            const modLogChannel = this.client.channels.cache.get(this.options.modLogsChannel) ||
+                msg.guild.channels.cache.find((channel) => channel.name === this.options.modLogsChannel && channel.type === 'GUILD_TEXT')
             if(modLogChannel) {
                 const embed = new MessageEmbed()
                     .setAuthor({name: `DAS Spam detection`, iconURL: 'https://discord-anti-spam.js.org/img/antispam.png'})
@@ -353,8 +351,10 @@ class AntiSpamClient extends EventEmitter {
         if (this.options.removeMessages && spamMessages) {
             await this.clearSpamMessages(spamMessages)
         }
-        this.cache.messages = this.cache.messages.filter((u) => u.authorID !== message.author.id)
-        this.cache.bannedUsers.push(message.author.id)
+        const cache = await this.cache.get(message.guild.id);
+        cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id)
+        cache.bannedUsers.push(message.author.id);
+        await this.cache.set(message.guild.id, cache);
         if (!member.bannable) {
             if (this.options.verbose) {
                 this.log.warn(`DAntiSpam (banUser#userNotBannable): ${message.author.tag} (ID: ${message.author.id}) could not be banned, insufficient permissions`);
@@ -400,7 +400,9 @@ class AntiSpamClient extends EventEmitter {
         if (this.options.removeMessages && spamMessages) {
             await this.clearSpamMessages(spamMessages)
         }
-        this.cache.messages = this.cache.messages.filter((u) => u.authorID !== message.author.id)
+        const cache = await this.cache.get(message.guild.id);
+        cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id);
+        await this.cache.set(message.guild.id, cache);
         const userCanBeMuted = message.guild.me.permissions.has('MODERATE_MEMBERS') && (message.guild.me.roles.highest.position > message.member.roles.highest.position && message.member.id !== message.guild.ownerId)
         if (!userCanBeMuted) {
             if (this.options.verbose) {
@@ -444,8 +446,10 @@ class AntiSpamClient extends EventEmitter {
         if (this.options.removeMessages && spamMessages) {
             await this.clearSpamMessages(spamMessages)
         }
-        this.cache.messages = this.cache.messages.filter((u) => u.authorID !== message.author.id)
-        this.cache.kickedUsers.push(message.author.id)
+        const cache = await this.cache.get(message.guild.id);
+       cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id);
+       cache.kickedUsers.push(message.author.id);
+       await this.cache.set(message.guild.id, cache);
         if (!member.kickable) {
             if (this.options.verbose) {
                 this.log.warn(`DAntiSpam (kickUser#userNotKickable): ${message.author.tag} (ID: ${message.author.id}) could not be kicked, insufficient permissions`)
@@ -487,8 +491,10 @@ class AntiSpamClient extends EventEmitter {
         if (this.options.removeMessages && spamMessages) {
             await this.clearSpamMessages(spamMessages)
         }
-        this.cache.warnedUsers.push(message.author.id)
-        await this.logs(message, `warned`)
+        const cache = await this.cache.get(message.guild.id);
+        cache.warnedUsers.push(message.author.id);
+        await this.cache.set(message.guild.id, cache);
+        await this.logs(message, `warned`);
         if (this.options.warnMessage) {
             message.channel.send(this.format(this.options.warnMessage, message)).catch((e) => {
                 if (this.options.verbose) {
@@ -499,16 +505,6 @@ class AntiSpamClient extends EventEmitter {
         this.emit('warnAdd', member);
         return true
     }
-
-
-    /**
-     *
-     * @param guild
-     */
-    async getGuildOptions (guild) {
-        return this.guildOptions.get(guild.id);
-    }
-
 
     /**
      * Checks a message.
@@ -555,12 +551,11 @@ class AntiSpamClient extends EventEmitter {
             content: message.content,
             sentTimestamp: message.createdTimestamp
         }
-        this.cache.messages.push(currentMessage)
+        const cache = await this.cache.get(message.guild.id);
+        cache.messages.push(currentMessage);
 
-        const cachedMessages = this.cache.messages.filter((m) => m.authorID === message.author.id && m.guildID === message.guild.id)
-
-        const duplicateMatches = cachedMessages.filter((m) => m.content === message.content && (m.sentTimestamp > (currentMessage.sentTimestamp - options.maxDuplicatesInterval)))
-
+        const cachedMessages = cache.messages.filter((m) => m.authorID === message.author.id && m.guildID === message.guild.id);
+        const duplicateMatches = cachedMessages.filter((m) => m.content === message.content && (m.sentTimestamp > (currentMessage.sentTimestamp - options.maxDuplicatesInterval)));
 
         /**
          * Duplicate messages sent before the threshold is triggered
@@ -580,7 +575,7 @@ class AntiSpamClient extends EventEmitter {
 
         let sanctioned = false
 
-        const userCanBeBanned = options.banEnabled && !this.cache.bannedUsers.includes(message.author.id) && !sanctioned
+        const userCanBeBanned = options.banEnabled && !cache.bannedUsers.includes(message.author.id) && !sanctioned
         if (userCanBeBanned && (spamMatches.length >= options.banThreshold)) {
             await this.banUser(message, member, spamMatches)
             sanctioned = true
@@ -599,7 +594,7 @@ class AntiSpamClient extends EventEmitter {
             sanctioned = true
         }
 
-        const userCanBeKicked = options.kickEnabled && !this.cache.kickedUsers.includes(message.author.id) && !sanctioned
+        const userCanBeKicked = options.kickEnabled && !cache.kickedUsers.includes(message.author.id) && !sanctioned
         if (userCanBeKicked && (spamMatches.length >= options.kickThreshold)) {
             await this.kickUser(message, member, spamMatches)
             sanctioned = true
@@ -608,7 +603,7 @@ class AntiSpamClient extends EventEmitter {
             sanctioned = true
         }
 
-        const userCanBeWarned = options.warnEnabled && !this.cache.warnedUsers.includes(message.author.id) && !sanctioned
+        const userCanBeWarned = options.warnEnabled && !cache.warnedUsers.includes(message.author.id) && !sanctioned
         if (userCanBeWarned && (spamMatches.length >= options.warnThreshold)) {
             await this.warnUser(message, member, spamMatches)
             sanctioned = true
@@ -616,7 +611,7 @@ class AntiSpamClient extends EventEmitter {
             await this.warnUser(message, member, [...duplicateMatches, ...spamOtherDuplicates])
             sanctioned = true
         }
-
+        await this.cache.set(message.guild.id, cache);
         this.emit('messageCreate', message, options);
         return sanctioned
     }
@@ -630,10 +625,12 @@ class AntiSpamClient extends EventEmitter {
      * 	antiSpam.userleave(member);
      * });
      */
-    async userleave (member){
-        this.cache.bannedUsers = this.cache.bannedUsers.filter((u) => u !== member.user.id)
-        this.cache.kickedUsers = this.cache.kickedUsers.filter((u) => u !== member.user.id)
-        this.cache.warnedUsers = this.cache.warnedUsers.filter((u) => u !== member.user.id)
+    async userleave (member) {
+        const cache = await this.cache.get(member.guild.id);
+        cache.bannedUsers = cache.bannedUsers.filter((u) => u !== member.user.id);
+        cache.kickedUsers = cache.kickedUsers.filter((u) => u !== member.user.id);
+        cache.warnedUsers = cache.warnedUsers.filter((u) => u !== member.user.id);
+        await this.cache.set(member.guild.id, cache);
 
         return true
     }
@@ -642,13 +639,14 @@ class AntiSpamClient extends EventEmitter {
     /**
      * Reset the cache of this AntiSpam client instance.
      */
-    reset () {
-        this.cache = {
+    async reset (guildID) {
+        let cache = {
             messages: [],
             warnedUsers: [],
             kickedUsers: [],
             bannedUsers: []
         }
+        await this.cache.set(guildID, cache);
     }
 }
 
