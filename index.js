@@ -249,6 +249,7 @@ class AntiSpamClient extends EventEmitter {
                 }
             },
             logToFile: false,
+            name: 'AntiSpaml',
             timestamp: 'YYYY/MM/DD HH:mm:ss'
         });
 
@@ -344,6 +345,22 @@ class AntiSpamClient extends EventEmitter {
     }
 
     /**
+     * Get cache for a guild
+     * @param {string} guildID Guild ID
+     */
+    async getCache (guildID) {
+        if (!this.cache.has(guildID)) {
+            this.cache.set(guildID, {
+                messages: [],
+                warnedUsers: [],
+                kickedUsers: [],
+                bannedUsers: []
+            });
+        }
+        return this.cache.get(guildID);
+    }
+
+    /**
      * Checks a message.
      * @param {Message} message The message to check.
      * @param {AntiSpamClientOptions} guildOptions - The guild options or Global Antispam Client Options
@@ -389,7 +406,7 @@ class AntiSpamClient extends EventEmitter {
             content: message.content,
             sentTimestamp: message.createdTimestamp
         }
-        const cache = await this.cache.get(message.guild.id);
+        const cache = await this.getCache(message.guild.id);
         cache.messages.push(currentMessage);
 
         const cachedMessages = cache.messages.filter((m) => m.authorID === message.author.id && m.guildID === message.guild.id);
@@ -425,7 +442,7 @@ class AntiSpamClient extends EventEmitter {
             if (options.removeMessages && spamMessages) {
                 await this.clearSpamMessages(spamMessages, options);
             }
-            const cache = await this.cache.get(message.guild.id);
+            const cache = await this.getCache(message.guild.id);
             cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id);
             cache.bannedUsers.push(message.author.id);
             await this.cache.set(message.guild.id, cache);
@@ -484,7 +501,7 @@ class AntiSpamClient extends EventEmitter {
             if (options.removeMessages && spamMessages) {
                 await this.clearSpamMessages(spamMessages, options)
             }
-            const cache = await this.cache.get(message.guild.id);
+            const cache = await this.getCache(message.guild.id);
             cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id);
             await this.cache.set(message.guild.id, cache);
             const userCanBeMuted = message.guild.me.permissions.has('MODERATE_MEMBERS') && (message.guild.me.roles.highest.position > message.member.roles.highest.position && message.member.id !== message.guild.ownerId)
@@ -503,7 +520,7 @@ class AntiSpamClient extends EventEmitter {
                 }
                 return false;
             }
-            await message.member.timeout(options.unMuteTime, 'Spamming')
+            await message.member.timeout(options.unMuteTime * 60_000, 'Spamming');
             if (options.muteMessage) {
                 await message.channel.send(this.format(options.muteMessage, message)).catch(e => {
                     if (options.verbose) {
@@ -540,7 +557,7 @@ class AntiSpamClient extends EventEmitter {
             if (options.removeMessages && spamMessages) {
                 await this.clearSpamMessages(spamMessages, options)
             }
-            const cache = await this.cache.get(message.guild.id);
+            const cache = await this.getCache(message.guild.id);
             cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id);
             cache.kickedUsers.push(message.author.id);
             await this.cache.set(message.guild.id, cache);
@@ -594,7 +611,7 @@ class AntiSpamClient extends EventEmitter {
             if (options.removeMessages && spamMessages) {
                 await this.clearSpamMessages(spamMessages, options);
             }
-            const cache = await this.cache.get(message.guild.id);
+            const cache = await this.getCache(message.guild.id);
             cache.warnedUsers.push(message.author.id);
             await this.cache.set(message.guild.id, cache);
             await this.logs(message, `warned`, options);
