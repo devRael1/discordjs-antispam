@@ -506,7 +506,6 @@ class AntiSpamClient extends EventEmitter {
     /**
      *
      * @param guild
-     * @returns {Promise<V>}
      */
     async getGuildOptions (guild) {
         return this.guildOptions.get(guild.id);
@@ -644,6 +643,7 @@ class AntiSpamClient extends EventEmitter {
         this.cache.bannedUsers = this.cache.bannedUsers.filter((u) => u !== member.user.id)
         this.cache.kickedUsers = this.cache.kickedUsers.filter((u) => u !== member.user.id)
         this.cache.warnedUsers = this.cache.warnedUsers.filter((u) => u !== member.user.id)
+
 
         return true
     }
