@@ -102,7 +102,6 @@ const Logger = require('leekslazylogger');
  *
  * @property {Snowflake|string[]|IgnoreMemberFunction} [ignoredMembers=[]] Array of member IDs that are ignored.
  * @property {Snowflake|string[]|IgnoreRoleFunction} [ignoredRoles=[]] Array of role IDs or role names that are ignored. Members with one of these roles will be ignored.
- * @property {Snowflake|string[]|IgnoreGuildFunction} [ignoredGuilds=[]] Array of guild IDs or guild names that are ignored.
  * @property {Snowflake|string[]|IgnoreChannelFunction} [ignoredChannels=[]] Array of channel IDs or channel names that are ignored.
  * @property {PermissionString[]} [ignoredPermissions=[]] Users with at least one of these permissions will be ignored.
  * @property {boolean} [ignoreBots=true] Whether bots should be ignored.
@@ -195,7 +194,6 @@ class AntiSpamClient extends EventEmitter {
 
             ignoredMembers: options.ignoredMembers || [],
             ignoredRoles: options.ignoredRoles || [],
-            ignoredGuilds: options.ignoredGuilds || [],
             ignoredChannels: options.ignoredChannels || [],
             ignoredPermissions: options.ignoredPermissions || [],
             ignoreBots: options.ignoreBots !== undefined ? options.ignoreBots : true,
@@ -537,9 +535,6 @@ class AntiSpamClient extends EventEmitter {
         const isMemberIgnored = typeof options.ignoredMembers === 'function' ? options.ignoredMembers(message.member) : options.ignoredMembers.includes(message.author.id)
         if (isMemberIgnored) return false
 
-        const isGuildIgnored = typeof options.ignoredGuilds === 'function' ? options.ignoredGuilds(message.guild) : options.ignoredGuilds.includes(message.guild.id)
-        if (isGuildIgnored) return false
-
         const isChannelIgnored = typeof options.ignoredChannels === 'function' ? options.ignoredChannels(message.channel) : options.ignoredChannels.includes(message.channel.id)
         if (isChannelIgnored) return false
 
@@ -636,14 +631,9 @@ class AntiSpamClient extends EventEmitter {
      * });
      */
     async userleave (member){
-        const options = this.options
-        const isGuildIgnored = typeof options.ignoredGuilds === 'function' ? options.ignoredGuilds(member.guild) : options.ignoredGuilds.includes(member.guild.id)
-        if (isGuildIgnored) return false
-
         this.cache.bannedUsers = this.cache.bannedUsers.filter((u) => u !== member.user.id)
         this.cache.kickedUsers = this.cache.kickedUsers.filter((u) => u !== member.user.id)
         this.cache.warnedUsers = this.cache.warnedUsers.filter((u) => u !== member.user.id)
-
 
         return true
     }
