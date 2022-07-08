@@ -355,6 +355,7 @@ class AntiSpamClient extends EventEmitter {
      */
     async message (message, guildOptions) {
         const options = guildOptions || this.options;
+        if (!options) return this.log.error(`DAntiSpam (message#failed): No options object found!`);
 
         if (
             !message.guild ||
