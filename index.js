@@ -254,7 +254,7 @@ class AntiSpamClient extends EventEmitter {
 
         /**
          * The cache for this AntiSpam client instance
-         * @type {AntiSpamCache}
+         * @type {Collection<Snowflake, AntiSpamCache>}
          * // Structure:
          * guild_ID: {
             messages: [],
