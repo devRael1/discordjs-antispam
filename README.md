@@ -1,3 +1,6 @@
+<p align="center"><a href="https://nodei.co/npm/@devraelfreeze/discordjs-antispam/"><img src="https://nodei.co/npm/@devraelfreeze/discordjs-antispam.png?downloads=true?downloadRank=true"></a></p>
+
+
 # discordjs-antispam
 
 
