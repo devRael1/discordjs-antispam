@@ -12,7 +12,6 @@ import {
     MessageEmbed,
     Role
 } from 'discord.js';
-import Logger from 'leekslazylogger';
 
 declare module 'discordjs-antispam' {
     const _default: AntiSpam;
@@ -21,8 +20,8 @@ declare module 'discordjs-antispam' {
         public client: Client;
         public options: AntiSpamOptions;
         public data: AntiSpamData;
-        public log: Logger;
-        constructor(client: Client, options?: AntiSpamOptions, log?: Logger, );
+
+        constructor(client: Client, options?: AntiSpamOptions);
 
         public message(message: Message): Promise<boolean>;
         public reset(): AntiSpamData;
