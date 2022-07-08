@@ -1,0 +1,26 @@
+{
+  "name": "discordjs-antispam",
+  "version": "1.0.0",
+  "description": "Antispam module for Discord JS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "discord",
+    "spam",
+    "anti-spam",
+    "discord.js",
+    "antispam",
+    "moderation",
+    "bot",
+    "plugin",
+    "module"
+  ],
+  "author": "devrael",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^13.8.1",
+    "leekslazylogger": "^4.1.7"
+  }
+}
