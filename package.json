@@ -1,5 +1,5 @@
 {
-  "name": "discordjs-antispam",
+  "name": "@devraelfreeze/discordjs-antispam",
   "version": "1.0.0",
   "description": "Antispam module for Discord JS",
   "main": "index.js",
@@ -17,6 +17,10 @@
     "plugin",
     "module"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devRael1/discordjs-antispam"
+  },
   "author": "devrael",
   "license": "MIT",
   "dependencies": {
