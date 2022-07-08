@@ -216,7 +216,7 @@ class AntiSpamClient extends EventEmitter {
          * The log system
          */
         this.log = log instanceof Logger ? log : new Logger({
-            debug: this.options.debug || false,
+            debug: this.options?.debug || false,
             levels: {
                 _logger: {format: '{timestamp}&r [LOGGER] {text}'},
                 basic: {format: '{timestamp} {text}'},
