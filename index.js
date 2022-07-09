@@ -627,7 +627,7 @@ class AntiSpamClient extends EventEmitter {
      * });
      */
     async userLeave (member) {
-        const cache = await this.cache.get(member.guild.id);
+        const cache = await this.getCache(member.guild.id);
         cache.bannedUsers = cache.bannedUsers.filter((u) => u !== member.user.id);
         cache.kickedUsers = cache.kickedUsers.filter((u) => u !== member.user.id);
         cache.warnedUsers = cache.warnedUsers.filter((u) => u !== member.user.id);
