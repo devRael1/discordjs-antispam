@@ -128,8 +128,9 @@ const { Client,
 /**
  * Cache data for the AntiSpamClient
  * Cache is unique per guild.
+ * Use Guild ID as key.
  * @typedef AntiSpamCache
- *
+ * @key {Snowflake} guildID The ID of the guild.
  * @property {Snowflake[]} warnedUsers Array of warned users.
  * @property {Snowflake[]} kickedUsers Array of kicked users.
  * @property {Snowflake[]} mutedUsers Array of muted users.
@@ -173,7 +174,7 @@ class AntiSpamClient extends EventEmitter {
             maxDuplicatesKick: options.maxDuplicatesKick || 10,
             maxDuplicatesBan: options.maxDuplicatesBan || 11,
 
-            unMuteTime: options.unMuteTime * 60_000 || 300000,
+            unMuteTime: options.unMuteTime * 60_000 || 600000,
 
             modLogsChannel: options.modLogsChannel || 'CHANNEL_ID',
             modLogsEnabled: options.modLogsEnabled || false,
@@ -251,21 +252,72 @@ class AntiSpamClient extends EventEmitter {
      * @ignore
      * @param {Message} msg The message to check the channel with
      * @param {string} action The action to log
-     * @param {AntiSpamClientOptions} options options for the action
+     * @param {AntiSpamClientOptions} options options of the guild or AntiSpam Instance
      */
     async logs (msg, action, options) {
         if (options.modLogsEnabled) {
             const modLogChannel = this.client.channels.cache.get(options.modLogsChannel) ||
-                msg.guild.channels.cache.find((channel) => channel.name === options.modLogsChannel && channel.type === 'GUILD_TEXT')
+                msg.guild.channels.cache.find((channel) => channel.name === options.modLogsChannel && channel.type === 'GUILD_TEXT');
             if(modLogChannel) {
-                const embed = new MessageEmbed()
-                    .setAuthor({name: `DAS Spam detection`, iconURL: 'https://discord-anti-spam.js.org/img/antispam.png'})
-                    .setDescription(`${msg.author} *(${msg.author.id})* has been **${action}** for **spam**!`)
-                    .setFooter({text: `DAS Anti spam`, iconURL: 'https://discord-anti-spam.js.org/img/antispam.png'})
-                    .setColor('RED')
-                await modLogChannel.send({embeds:[embed]});
+                await modLogChannel.send({
+                    embeds: [new MessageEmbed()
+                        .setColor(msg.member.displayHexColor === '#000000' ? '#ffffff' : msg.member.displayHexColor)
+                        .setAuthor({name: `Discord AntiSpam detection`, iconURL: 'https://discord-anti-spam.js.org/img/antispam.png'})
+                        .setDescription(`${msg.author} *(${msg.author.id})* has been **${action}** for **spam**!`)
+                        .setFooter({text: `DAS Anti spam`, iconURL: 'https://discord-anti-spam.js.org/img/antispam.png'})
+                    ]
+                });
             }
 
+        }
+    }
+
+    /**
+     *
+     * @param {string} error - The error to log
+     * @param {AntiSpamClientOptions} options options of the guild or AntiSpam Instance
+     * @returns {Promise<void>}
+     */
+    async logsError (error, options) {
+        if (options.errorMessages) {
+            const errorChannel = this.client.channels.cache.get(options.modLogsChannel) ||
+                this.client.channels.cache.find((channel) => channel.name === options.modLogsChannel && channel.type === 'GUILD_TEXT');
+            if (errorChannel) {
+                await errorChannel.send({
+                    embeds: [new MessageEmbed()
+                        .setColor('RED')
+                        .setAuthor({name: `Disord AntiSpam detection`, iconURL: 'https://cdn-icons-png.flaticon.com/512/148/148766.png'})
+                        .setTitle('⛔ Error')
+                        .setDescription(error)
+                        .setFooter({text: `Discord AntiSpam`, iconURL: 'https://discord-anti-spam.js.org/img/antispam.png'})
+                    ]
+                });
+            }
+        }
+    }
+
+    /**
+     *
+     * @param {string} msg - message to log
+     * @param {Message} message  - Message object
+     * @param {AntiSpamClientOptions} options options of the guild or AntiSpam Instance
+     * @returns {Promise<void>}
+     */
+    async logsVerbose (msg, message, options) {
+        if (options.verbose) {
+            const verboseChannel = this.client.channels.cache.get(options.modLogsChannel) ||
+                this.client.channels.cache.find((channel) => channel.name === options.modLogsChannel && channel.type === 'GUILD_TEXT');
+            if (verboseChannel) {
+                await verboseChannel.send({
+                    embeds: [new MessageEmbed()
+                        .setColor(message.member.displayHexColor === '#000000' ? '#ffffff' : message.member.displayHexColor)
+                        .setAuthor({name: `Discord AntiSpam detection`, iconURL: 'https://www.iconspng.com/uploads/warning-icon.png'})
+                        .setTitle('⚠️ Warning')
+                        .setDescription(msg)
+                        .setFooter({text: `DAS Anti spam`, iconURL: 'https://discord-anti-spam.js.org/img/antispam.png'})
+                    ]
+                });
+            }
         }
     }
 
@@ -273,28 +325,28 @@ class AntiSpamClient extends EventEmitter {
      * Delete spam messages
      * @ignore
      * @param {CachedMessage[]} messages The messages to delete
-     * @param {AntiSpamClientOptions} options options for the action
+     * @param {AntiSpamClientOptions} options options of the guild or AntiSpam Instance
      * @returns {Promise<void>}
      */
     async clearSpamMessages (messages, options) {
         try {
             let _messages = [];
             let _channel;
-            messages.forEach((message) => {
-                const channel = this.client.channels.cache.get(message.channelID)
+            await Promise.all(messages.map(async (message) => {
+                const channel = await this.client.channels.cache.get(message.channelID)
                 if (channel) {
-                    const msg = channel.messages.cache.get(message.messageID);
+                    const msg = await channel.messages.cache.get(message.messageID);
                     if (msg && msg.deletable) _messages.push(msg);
                     _channel = channel;
                 }
-            });
-            _channel.bulkDelete(_messages).catch(err => {
-                if(err && options.debug === true) console.error(`DAntiSpam (clearSpamMessages#failed): The message(s) couldn't be deleted`);
+            }));
+            await _channel.bulkDelete(_messages).catch(err => {
+                if (err && options.debug === true) return this.logsError('Discord AntiSpam (clearSpamMessages#failed): The message(s) couldn\'t be deleted', options);
             });
         } catch (e) {
             if(e){
                 if (options.debug) {
-                    console.error(`DAntiSpam (clearSpamMessages#failed): The message(s) couldn't be deleted!`);
+                    await this.logsError('Discord AntiSpam (clearSpamMessages#failed): The message(s) couldn\'t be deleted!', options);
                 }
             }
         }
@@ -316,34 +368,162 @@ class AntiSpamClient extends EventEmitter {
         return this.cache.get(guildID);
     }
 
+
+    /**
+     *
+     * @param {string} sanction Sanciton to applied
+     * @param {Message} message Message object
+     * @param {CachedMessage[]} [spamMessages] Spam messages
+     * @param {AntiSpamClientOptions} options options of the guild or AntiSpam Instance
+     * @returns {Promise<boolean>}
+     */
+    async appliedSanction (sanction, message, spamMessages, options) {
+        if (options.removeMessages && spamMessages) {
+            await this.clearSpamMessages(spamMessages, options);
+        }
+        const cache = await this.getCache(message.guild.id);
+        cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id);
+        switch (sanction) {
+            case 'ban': cache.bannedUsers.push(message.author.id); break;
+            case 'kick': cache.kickedUsers.push(message.author.id); break;
+            case 'warn': cache.warnedUsers.push(message.author.id); break;
+        }
+        await this.cache.set(message.guild.id, cache);
+
+        switch (sanction) {
+            case 'ban': {
+                if (!message.member.bannable) {
+                    if (options.verbose) {
+                        await this.logsVerbose(`DAntiSpam (banUser#userNotBannable): ${message.author.tag} (ID: ${message.author.id}) could not be banned, insufficient permissions`, message, options);
+                    }
+                    if (options.errorMessages) {
+                        message.channel.send(this.format(options.banErrorMessage, message)).catch((e) => {
+                            if (options.verbose) {
+                                this.logsError(`DAntiSpam (banUser#sendMissingPermMessage): ${e.message}`, options);
+                            }
+                        });
+                    }
+                    return false;
+                } else {
+                    await message.member.ban({
+                        reason: 'Spamming!',
+                        days: options.deleteMessagesAfterBanForPastDays
+                    }).catch((e) => {
+                        if (options.errorMessages) {
+                            message.channel.send(this.format(options.banErrorMessage, message)).catch(() => {
+                                if (options.verbose) {
+                                    this.logsError(`DAntiSpam (banUser#sendSuccessMessage): ${e.message}`, options);
+                                }
+                            });
+                        }
+                    })
+                    if (options.modLogsEnabled) {
+                        await this.logs(message, `banned`, options);
+                    }
+                    this.emit('banAdd', message.member);
+                    return true;
+                }
+            }
+            case 'kick': {
+                if (!message.member.kickable) {
+                    if (options.verbose) {
+                        await this.logsVerbose(`DAntiSpam (kickUser#userNotKickable): ${message.author.tag} (ID: ${message.author.id}) could not be kicked, insufficient permissions.`, message, options);
+                    }
+                    if (options.errorMessages) {
+                        message.channel.send(this.format(options.kickErrorMessage, message)).catch((e) => {
+                            if (options.verbose) {
+                                this.logsError(`DAntiSpam (kickUser#sendMissingPermMessage): ${e.message}`, options);
+                            }
+                        })
+                    }
+                    return false;
+                } else {
+                    await message.member.kick('Spamming!');
+                    if (options.kickMessage) {
+                        message.channel.send(this.format(options.kickMessage, message)).catch((e) => {
+                            if (options.verbose) {
+                                this.logsError(`DAntiSpam (kickUser#sendSuccessMessage): ${e.message}`, options);
+                            }
+                        });
+                    }
+                    if (options.modLogsEnabled) {
+                        await this.logs(message, `kicked`, options);
+                    }
+                    this.emit('kickAdd', message.member);
+                    return true;
+                }
+            }
+            case 'mute': {
+                const userCanBeMuted = message.guild.me.permissions.has('MODERATE_MEMBERS') && (message.guild.me.roles.highest.position > message.member.roles.highest.position && message.member.id !== message.guild.ownerId)
+                if (!userCanBeMuted) {
+                    if (options.verbose) {
+                        await this.logsVerbose(`DAntiSpam (kickUser#userNotMutable): ${message.author.tag} (ID: ${message.author.id}) could not be muted, improper permissions.`, message, options);
+                    }
+                    if (options.errorMessages) {
+                        await message.channel
+                            .send(this.format(options.muteErrorMessage, message))
+                            .catch((e) => {
+                                if (options.verbose) {
+                                    this.logsError(`DAntiSpam (muteUser#sendMissingPermMessage): ${e.message}`, options);
+                                }
+                            });
+                    }
+                    return false;
+                }
+                await message.member.timeout(options.unMuteTime * 60_000, 'Spamming');
+                if (options.muteMessage) {
+                    await message.channel.send(this.format(options.muteMessage, message)).catch(e => {
+                        if (options.verbose) {
+                            this.logsError(`DAntiSpam (muteUser#sendSuccessMessage): ${e.message}`, options);
+                        }
+                    });
+                }
+                if (options.modLogsEnabled) {
+                    await this.logs(message, `muted`, options);
+                }
+                this.emit('muteAdd', message.member);
+                return true;
+            }
+            case 'warn': {
+                if (options.warnMessage) {
+                    await message.channel.send(this.format(options.warnMessage, message)).catch((e) => {
+                        if (options.verbose) {
+                            this.logsError(`DAntiSpam (warnUser#sendSuccessMessage): ${e.message}`, options);
+                        }
+                    });
+                }
+                if (options.modLogsEnabled) {
+                    await this.logs(message, `warned`, options);
+                }
+                this.emit('warnAdd', message.member);
+                return true;
+            }
+        }
+    }
+
     /**
      * Checks a message.
      * @param {Message} message The message to check.
-     * @param {AntiSpamClientOptions} guildOptions - The guild options or Global Antispam Client Options
+     * @param {AntiSpamClientOptions} _options - The guild options or Global Antispam Client Options
      * @returns {Promise<boolean>} Whether the message has triggered a threshold.
      * @example
      * client.on('message', (msg) => {
      * 	antiSpam.message(msg);
      * });
      */
-    async message (message, guildOptions) {
-        const options = guildOptions || this.options;
-        if (!options) return console.error(`DAntiSpam (message#failed): No options object found!`);
+    async message (message, _options) {
+        const options = _options || this.options;
+        if (!options) return await this.logsError('Discord AntiSpam (message#failed): No options found!', options);
 
-        if (
-            !message.guild ||
-            message.author.id === this.client.user.id ||
-            (message.guild.ownerId === message.author.id && !options.debug) ||
-            (options.ignoreBots && message.author.bot)
-        ) {
-            return false
-        }
+        if (!message.guild || message.author.id === this.client.user.id
+            || (message.guild.ownerId === message.author.id && !options.debug)
+            || (options.ignoreBots && message.author.bot)) return false;
 
         const isMemberIgnored = typeof options.ignoredMembers === 'function' ? options.ignoredMembers(message.member) : options.ignoredMembers.includes(message.author.id)
-        if (isMemberIgnored) return false
+        if (isMemberIgnored) return false;
 
         const isChannelIgnored = typeof options.ignoredChannels === 'function' ? options.ignoredChannels(message.channel) : options.ignoredChannels.includes(message.channel.id)
-        if (isChannelIgnored) return false
+        if (isChannelIgnored) return false;
 
         const member = message.member || await message.guild.members.fetch(message.author);
 
@@ -368,6 +548,7 @@ class AntiSpamClient extends EventEmitter {
         const cachedMessages = cache.messages.filter((m) => m.authorID === message.author.id && m.guildID === message.guild.id);
         const duplicateMatches = cachedMessages.filter((m) => m.content === message.content && (m.sentTimestamp > (currentMessage.sentTimestamp - options.maxDuplicatesInterval)));
 
+
         /**
          * Duplicate messages sent before the threshold is triggered
          * @type {CachedMessage[]}
@@ -383,218 +564,59 @@ class AntiSpamClient extends EventEmitter {
         }
 
         const spamMatches = cachedMessages.filter((m) => m.sentTimestamp > (Date.now() - options.maxInterval))
-
         let sanctioned = false;
 
-        /**
-         * Ban a user.
-         * @ignore
-         * @param {Message} message Context message.
-         * @param {GuildMember} member The member to ban.
-         * @param {CachedMessage[]} [spamMessages] The spam messages.
-         * @returns {Promise<boolean>} Whether the member could be banned.
-         */
-        const banUser = async (message, member, spamMessages) => {
-            if (options.removeMessages && spamMessages) {
-                await this.clearSpamMessages(spamMessages, options);
-            }
-            const cache = await this.getCache(message.guild.id);
-            cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id);
-            cache.bannedUsers.push(message.author.id);
-            await this.cache.set(message.guild.id, cache);
-            if (!member.bannable) {
-                if (options.verbose) {
-                    console.warn(`DAntiSpam (banUser#userNotBannable): ${message.author.tag} (ID: ${message.author.id}) could not be banned, insufficient permissions`);
-                }
-                if (options.errorMessages) {
-                    message.channel.send(this.format(options.banErrorMessage, message)).catch((e) => {
-                        if (options.verbose) {
-                            console.error(`DAntiSpam (banUser#sendMissingPermMessage): ${e.message}`);
-                        }
-                    });
-                }
-                return false;
-            } else {
-                await message.member.ban({
-                    reason: 'Spamming!',
-                    days: options.deleteMessagesAfterBanForPastDays
-                }).catch((e) => {
-                    if (options.errorMessages) {
-                        message.channel.send(this.format(options.banErrorMessage, message)).catch(() => {
-                            if (options.verbose) {
-                                console.error(`DAntiSpam (banUser#sendSuccessMessage): ${e.message}`);
-                            }
-                        });
-                    }
-                })
-                if (options.modLogsEnabled) {
-                    await this.logs(message, `banned`, options);
-                }
-                this.emit('banAdd', member);
-                return true;
-            }
-        }
-
+        /** BAN SANCTION */
         const userCanBeBanned = options.banEnabled && !cache.bannedUsers.includes(message.author.id) && !sanctioned
         if (userCanBeBanned && (spamMatches.length >= options.banThreshold)) {
-            await banUser(message, member, spamMatches);
+            this.emit('spamThresholdBan', message.member, false);
+            await this.appliedSanction('ban', message, spamMatches, options);
             sanctioned = true;
         } else if (userCanBeBanned && (duplicateMatches.length >= options.maxDuplicatesBan)) {
-            await banUser(message, member, [...duplicateMatches, ...spamOtherDuplicates]);
+            this.emit('spamThresholdBan', message.member, false);
+            await this.appliedSanction('ban', message, [...duplicateMatches, ...spamOtherDuplicates], options);
             sanctioned = true;
         }
 
-
-        /**
-         * Mute a user.
-         * @ignore
-         * @param {Message} message Context message.
-         * @param {GuildMember} member The member to mute.
-         * @param {CachedMessage[]} [spamMessages] The spam messages.
-         * @returns {Promise<boolean>} Whether the member could be muted.
-         */
-        const muteUser = async (message, member, spamMessages) => {
-            if (options.removeMessages && spamMessages) {
-                await this.clearSpamMessages(spamMessages, options)
-            }
-            const cache = await this.getCache(message.guild.id);
-            cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id);
-            await this.cache.set(message.guild.id, cache);
-            const userCanBeMuted = message.guild.me.permissions.has('MODERATE_MEMBERS') && (message.guild.me.roles.highest.position > message.member.roles.highest.position && message.member.id !== message.guild.ownerId)
-            if (!userCanBeMuted) {
-                if (options.verbose) {
-                    console.warn(`DAntiSpam (kickUser#userNotMutable): ${message.author.tag} (ID: ${message.author.id}) could not be muted, improper permissions.`);
-                }
-                if (options.errorMessages) {
-                    await message.channel
-                        .send(this.format(options.muteErrorMessage, message))
-                        .catch((e) => {
-                            if (options.verbose) {
-                                console.error(`DAntiSpam (muteUser#sendMissingPermMessage): ${e.message}`);
-                            }
-                        });
-                }
-                return false;
-            }
-            await message.member.timeout(options.unMuteTime * 60_000, 'Spamming');
-            if (options.muteMessage) {
-                await message.channel.send(this.format(options.muteMessage, message)).catch(e => {
-                    if (options.verbose) {
-                        console.error(`DAntiSpam (muteUser#sendSuccessMessage): ${e.message}`);
-                    }
-                });
-            }
-            if (options.modLogsEnabled) {
-                await this.logs(message, `muted`, options);
-            }
-            this.emit('muteAdd', member);
-            return true;
-        }
-
-        const userCanBeMuted = options.muteEnabled && !sanctioned
-        if (userCanBeMuted && (spamMatches.length >= options.muteThreshold)) {
-            await muteUser(message, member, spamMatches);
-            sanctioned = true;
-        } else if (userCanBeMuted && (duplicateMatches.length >= options.maxDuplicatesMute)) {
-            await muteUser(message, member, [...duplicateMatches, ...spamOtherDuplicates]);
-            sanctioned = true;
-        }
-
-
-        /**
-         * Kick a user.
-         * @ignore
-         * @param {Message} message Context message.
-         * @param {GuildMember} member The member to kick.
-         * @param {CachedMessage[]} [spamMessages] The spam messages.
-         * @returns {Promise<boolean>} Whether the member could be kicked.
-         */
-        const kickUser = async (message, member, spamMessages) => {
-            if (options.removeMessages && spamMessages) {
-                await this.clearSpamMessages(spamMessages, options)
-            }
-            const cache = await this.getCache(message.guild.id);
-            cache.messages = cache.messages.filter((u) => u.authorID !== message.author.id);
-            cache.kickedUsers.push(message.author.id);
-            await this.cache.set(message.guild.id, cache);
-            if (!member.kickable) {
-                if (options.verbose) {
-                    console.warn(`DAntiSpam (kickUser#userNotKickable): ${message.author.tag} (ID: ${message.author.id}) could not be kicked, insufficient permissions`)
-                }
-                if (options.errorMessages) {
-                    message.channel.send(this.format(options.kickErrorMessage, message)).catch((e) => {
-                        if (options.verbose) {
-                            console.error(`DAntiSpam (kickUser#sendMissingPermMessage): ${e.message}`)
-                        }
-                    })
-                }
-                return false
-            } else {
-                await message.member.kick('Spamming!')
-                if (options.kickMessage) {
-                    message.channel.send(this.format(options.kickMessage, message)).catch((e) => {
-                        if (options.verbose) {
-                            console.error(`DAntiSpam (kickUser#sendSuccessMessage): ${e.message}`);
-                        }
-                    });
-                }
-                if (options.modLogsEnabled) {
-                    await this.logs(message, `kicked`, options);
-                }
-                this.emit('kickAdd', member);
-                return true
-            }
-        }
-
+        /** KICK SANCTION */
         const userCanBeKicked = options.kickEnabled && !cache.kickedUsers.includes(message.author.id) && !sanctioned
         if (userCanBeKicked && (spamMatches.length >= options.kickThreshold)) {
-            await kickUser(message, member, spamMatches);
+            this.emit('spamThresholdKick', message.member, false);
+            await this.appliedSanction('kick', message, spamMatches, options);
             sanctioned = true;
         } else if (userCanBeKicked && (duplicateMatches.length >= options.maxDuplicatesKick)) {
-            await kickUser(message, member, [...duplicateMatches, ...spamOtherDuplicates]);
+            this.emit('spamThresholdKick', message.member, true);
+            await this.appliedSanction('kick', message, [...duplicateMatches, ...spamOtherDuplicates], options);
             sanctioned = true;
         }
 
-        /**
-         * Warn a user.
-         * @ignore
-         * @param {Message} message Context message.
-         * @param {GuildMember} member The member to warn.
-         * @param {CachedMessage[]} [spamMessages] The spam messages.
-         * @returns {Promise<boolean>} Whether the member could be warned.
-         */
-        const warnUser = async (message, member, spamMessages) => {
-            if (options.removeMessages && spamMessages) {
-                await this.clearSpamMessages(spamMessages, options);
-            }
-            const cache = await this.getCache(message.guild.id);
-            cache.warnedUsers.push(message.author.id);
-            await this.cache.set(message.guild.id, cache);
-            await this.logs(message, `warned`, options);
-            if (options.warnMessage) {
-                message.channel.send(this.format(options.warnMessage, message)).catch((e) => {
-                    if (options.verbose) {
-                        console.error(`DAntiSpam (warnUser#sendSuccessMessage): ${e.message}`)
-                    }
-                });
-            }
-            this.emit('warnAdd', member);
-            return true;
+        /** MUTE SANCTION */
+        const userCanBeMuted = options.muteEnabled && !sanctioned;
+        if (userCanBeMuted && (spamMatches.length >= options.muteThreshold)) {
+            this.emit('spamThresholdMute', message.member, false);
+            await this.appliedSanction('mute', message, spamMatches, options);
+            sanctioned = true;
+        } else if (userCanBeMuted && (duplicateMatches.length >= options.maxDuplicatesMute)) {
+            this.emit('spamThresholdMute', message.member, true);
+            await this.appliedSanction('mute', message, [...duplicateMatches, ...spamOtherDuplicates], options);
+            sanctioned = true;
         }
 
-        const userCanBeWarned = options.warnEnabled && !cache.warnedUsers.includes(message.author.id) && !sanctioned
+        /** WARN SANCTION */
+        const userCanBeWarned = options.warnEnabled && !cache.warnedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeWarned && (spamMatches.length >= options.warnThreshold)) {
-            await warnUser(message, member, spamMatches);
+            this.emit('spamThresholdWarn', message.member, false);
+            await this.appliedSanction('warn', message, spamMatches, options);
             sanctioned = true;
         } else if (userCanBeWarned && (duplicateMatches.length >= options.maxDuplicatesWarn)) {
-            await warnUser(message, member, [...duplicateMatches, ...spamOtherDuplicates]);
+            this.emit('spamThresholdWarn', message.member, true);
+            await this.appliedSanction('warn', message, [...duplicateMatches, ...spamOtherDuplicates], options);
             sanctioned = true;
         }
+
         await this.cache.set(message.guild.id, cache);
-        this.emit('messageCreate', message, options);
-        return sanctioned
+        return sanctioned;
     }
-    // noinspection JSUnusedGlobalSymbols
     /**
      * Checks if the user left the server to remove him from the cache!
      * @param {GuildMember} member The member to remove from the cache.
@@ -604,17 +626,16 @@ class AntiSpamClient extends EventEmitter {
      * 	antiSpam.userleave(member);
      * });
      */
-    async userleave (member) {
+    async userLeave (member) {
         const cache = await this.cache.get(member.guild.id);
         cache.bannedUsers = cache.bannedUsers.filter((u) => u !== member.user.id);
         cache.kickedUsers = cache.kickedUsers.filter((u) => u !== member.user.id);
         cache.warnedUsers = cache.warnedUsers.filter((u) => u !== member.user.id);
         await this.cache.set(member.guild.id, cache);
 
-        return true
+        return true;
     }
 
-    // noinspection JSUnusedGlobalSymbols
     /**
      * Reset the cache of this AntiSpam client instance.
      */

@@ -14,8 +14,11 @@ import {
 } from 'discord.js';
 
 declare module 'discordjs-antispam' {
-    const _default: AntiSpam;
+    const _default: AntiSpamConstructor;
     export default _default;
+    interface AntiSpamConstructor {
+        new (client: Client, options?: AntiSpamOptions): AntiSpam;
+    }
     class AntiSpam extends EventEmitter {
         public client: Client;
         public options: AntiSpamOptions;
@@ -23,9 +26,12 @@ declare module 'discordjs-antispam' {
 
         constructor(client: Client, options?: AntiSpamOptions);
 
+        /** Functions */
         public message(message: Message): Promise<boolean>;
         public reset(): AntiSpamData;
+        public userLeave(member: GuildMember): void;
 
+        /** All events (listeners) */
         public on(
             event: 'banAdd' | 'kickAdd' | 'warnAdd' | 'muteAdd',
             listener: (member: GuildMember) => any
