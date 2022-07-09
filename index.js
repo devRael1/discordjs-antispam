@@ -10,6 +10,7 @@ const { Client,
     TextChannel,
     PermissionString
 } = require('discord.js');
+const WordsFilterSystem = require('./lib/words');
 
 /**
  * @callback IgnoreMemberFunction
@@ -68,6 +69,7 @@ const { Client,
  * @typedef AntiSpamClientOptions
  *
  * @property {boolean} [customGuildOptions=false] Whether to use custom guild options
+ * @property {boolean} [wordsFilter=false] Whether to use words filter system
  * @property {number} [warnThreshold=3] Amount of messages sent in a row that will cause a warning.
  * @property {number} [muteThreshold=4] Amount of messages sent in a row that will cause a mute.
  * @property {number} [kickThreshold=5] Amount of messages sent in a row that will cause a kick.
@@ -159,20 +161,23 @@ class AntiSpamClient extends EventEmitter {
          * @type {AntiSpamClientOptions}
          */
         this.options = options.customGuildOptions ? undefined : {
+            /** Use customGuildOptions instead of AntiSpam Client Instance Options defaults value */
             customGuildOptions: options.customGuildOptions || false,
 
-            warnThreshold: options.warnThreshold || 3,
-            muteThreshold: options.muteThreshold || 4,
-            kickThreshold: options.kickThreshold || 5,
-            banThreshold: options.banThreshold || 7,
+            wordsFilter: options.wordsFilter || false,
+
+            warnThreshold: options.warnThreshold || 4,
+            muteThreshold: options.muteThreshold || 6,
+            kickThreshold: options.kickThreshold || 8,
+            banThreshold: options.banThreshold || 10,
 
             maxInterval: options.maxInterval || 2000,
-            maxDuplicatesInterval: options.maxDuplicatesInterval || 2000,
+            maxDuplicatesInterval: options.maxDuplicatesInterval || 3000,
 
-            maxDuplicatesWarn: options.maxDuplicatesWarn || 7,
-            maxDuplicatesMute: options.maxDuplicatesMute || 9,
-            maxDuplicatesKick: options.maxDuplicatesKick || 10,
-            maxDuplicatesBan: options.maxDuplicatesBan || 11,
+            maxDuplicatesWarn: options.maxDuplicatesWarn || 4,
+            maxDuplicatesMute: options.maxDuplicatesMute || 6,
+            maxDuplicatesKick: options.maxDuplicatesKick || 8,
+            maxDuplicatesBan: options.maxDuplicatesBan || 10,
 
             unMuteTime: options.unMuteTime * 60_000 || 600000,
 
@@ -215,10 +220,12 @@ class AntiSpamClient extends EventEmitter {
             warnedUsers: [],
             kickedUsers: [],
             bannedUsers: []
-        }
+            }
          */
         this.cache = new Collection();
 
+        /** Words Filter System */
+        this.anti_words = new WordsFilterSystem(this);
     }
 
 
@@ -557,17 +564,17 @@ class AntiSpamClient extends EventEmitter {
         if (duplicateMatches.length > 0) {
             let rowBroken = false
             cachedMessages.sort((a, b) => b.sentTimestamp - a.sentTimestamp).forEach(element => {
-                if (rowBroken) return
-                if (element.content !== duplicateMatches[0].content) rowBroken = true
-                else spamOtherDuplicates.push(element)
+                if (rowBroken) return;
+                if (element.content !== duplicateMatches[0].content) rowBroken = true;
+                else spamOtherDuplicates.push(element);
             })
         }
 
-        const spamMatches = cachedMessages.filter((m) => m.sentTimestamp > (Date.now() - options.maxInterval))
+        const spamMatches = cachedMessages.filter((m) => m.sentTimestamp > (Date.now() - options.maxInterval));
         let sanctioned = false;
 
         /** BAN SANCTION */
-        const userCanBeBanned = options.banEnabled && !cache.bannedUsers.includes(message.author.id) && !sanctioned
+        const userCanBeBanned = options.banEnabled && !cache.bannedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeBanned && (spamMatches.length >= options.banThreshold)) {
             this.emit('spamThresholdBan', message.member, false);
             await this.appliedSanction('ban', message, spamMatches, options);
@@ -579,7 +586,7 @@ class AntiSpamClient extends EventEmitter {
         }
 
         /** KICK SANCTION */
-        const userCanBeKicked = options.kickEnabled && !cache.kickedUsers.includes(message.author.id) && !sanctioned
+        const userCanBeKicked = options.kickEnabled && !cache.kickedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeKicked && (spamMatches.length >= options.kickThreshold)) {
             this.emit('spamThresholdKick', message.member, false);
             await this.appliedSanction('kick', message, spamMatches, options);
@@ -617,6 +624,14 @@ class AntiSpamClient extends EventEmitter {
         await this.cache.set(message.guild.id, cache);
         return sanctioned;
     }
+
+    // TODO: Créer la function qui permettra de check le message via le systeme de words Filter via this.anti_words
+    //  Il faudra donc utiliser la class WordsFilterSystem
+
+    async message_wordfilter(message, options) {
+        // Voir pour appliquer les ignorers.... aussi au système de words filter
+    }
+
     /**
      * Checks if the user left the server to remove him from the cache!
      * @param {GuildMember} member The member to remove from the cache.

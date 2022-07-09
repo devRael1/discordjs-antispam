@@ -27,7 +27,8 @@ declare module 'discordjs-antispam' {
         constructor(client: Client, options?: AntiSpamOptions);
 
         /** Functions */
-        public message(message: Message): Promise<boolean>;
+        public message(message: Message, options: AntiSpamOptions): Promise<boolean>;
+        public message_wordfilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
         public reset(): AntiSpamData;
         public userLeave(member: GuildMember): void;
 
@@ -63,6 +64,8 @@ declare module 'discordjs-antispam' {
     };
 
     type AntiSpamOptions = {
+        customGuildOptions?: boolean;
+        wordsFilter?: boolean;
         warnThreshold?: number;
         banThreshold?: number;
         kickThreshold?: number;
