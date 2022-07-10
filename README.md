@@ -107,15 +107,18 @@ client.login("VERY SECRET TOKEN HERE :)");
 
 ## ⏳ TODO
 
-* Add and Test: `Words Filter System` (Can configure the words list to filter)
+* ✅ Add and Test: `Words Filter System` (Can configure the words list to filter) 
 * Add and Test: `Discord Anti Links System`
 * Add and Test: `Anti Links System` (Can configure the links to be checked)
 * Add and Test: `Mass Mentions System`
 * Add and Test: `Emojis excessifs System`
-* Bypass Bots for All Systems *(Can be enabled or Disabled)*
-* Rename Package to `Auto Moderation Module`
+* ✅ Bypass Bots for All Systems *(Can be enabled or Disabled)*
 * Finish the Example for README.md
+* Find a method to clear cache for a guild when the cache is too big.
 * Create docs for the module
+
+## 📷 Screenshots
+// TODO
 
 ## 🐛 Bug Reports
 
