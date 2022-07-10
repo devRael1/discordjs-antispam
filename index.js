@@ -225,7 +225,7 @@ class AntiSpamClient extends EventEmitter {
         this.cache = new Collection();
 
         /** Words Filter System */
-        this.anti_words = new WordsFilterSystem(this);
+        this.anti_words = new WordsFilterSystem();
 
         /** Sanctions Manager */
         this.sanctions = new SanctionsManager(this);
@@ -233,7 +233,7 @@ class AntiSpamClient extends EventEmitter {
 
     /**
      * Get cache for a guild
-     * @param {string} guildID Guild ID
+     * @param {Snowflake} guildID Guild ID
      */
     async getCache (guildID) {
         if (!this.cache.has(guildID)) {
@@ -317,10 +317,12 @@ class AntiSpamClient extends EventEmitter {
         if (userCanBeBanned && (spamMatches.length >= options.banThreshold)) {
             this.emit('spamThresholdBan', message.member, false);
             await this.sanctions.appliedSanction('ban', message, spamMatches, options);
+            this.emit('banAdd', message.member);
             sanctioned = true;
         } else if (userCanBeBanned && (duplicateMatches.length >= options.maxDuplicatesBan)) {
             this.emit('spamThresholdBan', message.member, false);
             await this.sanctions.appliedSanction('ban', message, [...duplicateMatches, ...spamOtherDuplicates], options);
+            this.emit('banAdd', message.member);
             sanctioned = true;
         }
 
@@ -329,10 +331,12 @@ class AntiSpamClient extends EventEmitter {
         if (userCanBeKicked && (spamMatches.length >= options.kickThreshold)) {
             this.emit('spamThresholdKick', message.member, false);
             await this.sanctions.appliedSanction('kick', message, spamMatches, options);
+            this.emit('kickAdd', message.member);
             sanctioned = true;
         } else if (userCanBeKicked && (duplicateMatches.length >= options.maxDuplicatesKick)) {
             this.emit('spamThresholdKick', message.member, true);
             await this.sanctions.appliedSanction('kick', message, [...duplicateMatches, ...spamOtherDuplicates], options);
+            this.emit('kickAdd', message.member);
             sanctioned = true;
         }
 
@@ -341,10 +345,12 @@ class AntiSpamClient extends EventEmitter {
         if (userCanBeMuted && (spamMatches.length >= options.muteThreshold)) {
             this.emit('spamThresholdMute', message.member, false);
             await this.sanctions.appliedSanction('mute', message, spamMatches, options);
+            this.emit('muteAdd', message.member);
             sanctioned = true;
         } else if (userCanBeMuted && (duplicateMatches.length >= options.maxDuplicatesMute)) {
             this.emit('spamThresholdMute', message.member, true);
             await this.sanctions.appliedSanction('mute', message, [...duplicateMatches, ...spamOtherDuplicates], options);
+            this.emit('muteAdd', message.member);
             sanctioned = true;
         }
 
@@ -353,10 +359,12 @@ class AntiSpamClient extends EventEmitter {
         if (userCanBeWarned && (spamMatches.length >= options.warnThreshold)) {
             this.emit('spamThresholdWarn', message.member, false);
             await this.sanctions.appliedSanction('warn', message, spamMatches, options);
+            this.emit('warnAdd', message.member);
             sanctioned = true;
         } else if (userCanBeWarned && (duplicateMatches.length >= options.maxDuplicatesWarn)) {
             this.emit('spamThresholdWarn', message.member, true);
             await this.sanctions.appliedSanction('warn', message, [...duplicateMatches, ...spamOtherDuplicates], options);
+            this.emit('warnAdd', message.member);
             sanctioned = true;
         }
 

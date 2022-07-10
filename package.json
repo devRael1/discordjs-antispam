@@ -1,7 +1,7 @@
 {
   "name": "@devraelfreeze/discordjs-antispam",
-  "version": "1.5.5",
-  "description": "Antispam module for Discord JS",
+  "version": "1.5.7",
+  "description": "Complex Antispam module for Discord JS",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
