@@ -519,7 +519,6 @@ class AntiSpamClient extends EventEmitter {
             cache.messages = [];
         }
         await this.cache.set(member.guild.id, cache);
-
         return true;
     }
 
