@@ -64,7 +64,12 @@ const antiSpam = new AntiSpam(client , {
 /** Listeners */
 client.on("ready", () => console.log(`Logged in as ${client.user.tag}.`));
 client.on("messageCreate", async (message) => {
+    /** Check spam */
     await antiSpam.message(message);
+    /** Check words Filter */
+    const containt_badWord = await antiSpam.message_wordfilter(message);
+    /** Get array of bad words containing in the message */
+    const badWordsArray = await antiSpam.message_badWordsUsages(message);
 });
 /** Login the bot */
 client.login("VERY SECRET TOKEN HERE :)");
@@ -82,7 +87,7 @@ const antiSpam = new AntiSpam(client, {customGuildOptions: true});
 /** Listeners */
 client.on("ready", () => console.log(`Logged in as ${client.user.tag}.`));
 client.on("messageCreate", async (message) => {
-    /** Custom guild options in Object format. */
+    /** Custom guild options in Object */
     const guildOptions = {
         warnThreshold: 4, // Amount of messages sent in a row that will cause a warning.
         muteThreshold: 6, // Amount of messages sent in a row that will cause a mute
@@ -107,11 +112,21 @@ client.on("messageCreate", async (message) => {
         modLogsChannelName: "CHANNEL_ID", // channel ID to send the logs
         // And many more options...
     };
+    /** Check spam */
     await antiSpam.message(message, guildOptions);
+    /** Check words Filter */
+    const containt_badWord = await antiSpam.message_wordfilter(message, guildOptions);
+    /** Get array of bad words containing in the message */
+    const badWordsArray = await antiSpam.message_badWordsUsages(message);
+    
 });
 /** Login the bot */
 client.login("VERY SECRET TOKEN HERE :)");
 ```
+
+## ⚙️ AntiSpam Client Options
+// TODO
+
 
 ## ⏳ TODO
 
@@ -132,7 +147,7 @@ client.login("VERY SECRET TOKEN HERE :)");
 
 If you have any bugs or trouble setting the module up, feel free to open an issue on [Github Repository](https://github.com/devRael1/discordjs-antispam)
 <br>
-### If you want, you can contact me on Discord: `Freeze#0123`
+### If you want more support, you can contact me on Discord: `Freeze#0123`
 
 ## 🗃️ Old Versions
 
