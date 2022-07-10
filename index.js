@@ -628,8 +628,44 @@ class AntiSpamClient extends EventEmitter {
     // TODO: Créer la function qui permettra de check le message via le systeme de words Filter via this.anti_words
     //  Il faudra donc utiliser la class WordsFilterSystem
 
-    async message_wordfilter(message, options) {
+    async message_wordfilter(message, _options) {
         // Voir pour appliquer les ignorers.... aussi au système de words filter
+        const options = _options || this.options;
+        if (!options) return await this.logsError('Discord AntiSpam (message#failed): No options found!', options);
+
+        if (!options.wordsFilter) return false;
+
+        if (!message.guild || message.author.id === this.client.user.id
+            || (message.guild.ownerId === message.author.id && !options.debug)
+            || (options.ignoreBots && message.author.bot)) return false;
+
+        const isMemberIgnored = typeof options.ignoredMembers === 'function' ? options.ignoredMembers(message.member) : options.ignoredMembers.includes(message.author.id)
+        if (isMemberIgnored) return false;
+
+        const isChannelIgnored = typeof options.ignoredChannels === 'function' ? options.ignoredChannels(message.channel) : options.ignoredChannels.includes(message.channel.id)
+        if (isChannelIgnored) return false;
+
+        const member = message.member || await message.guild.members.fetch(message.author);
+
+        const memberHasIgnoredRoles = typeof options.ignoredRoles === 'function'
+            ? options.ignoredRoles(member.roles.cache)
+            : options.ignoredRoles.some((r) => member.roles.cache.has(r))
+        if (memberHasIgnoredRoles) return false;
+
+        if (options.ignoredPermissions.some((permission) => member.permissions.has(permission))) return false;
+
+
+        /** Check if message contain bad words */
+        if (await this.anti_words.checkWord(message.cleanContent, message.guild.id)) return true;
+    }
+
+    /**
+     *
+     * @param {Message} message Message to check
+     * @returns {Promise<Array.string>}
+     */
+    async message_badWordsUsages(message) {
+        return this.anti_words.checkBadWordsUsages(message.cleanContent, message.guild.id);
     }
 
     /**
