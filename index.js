@@ -11,7 +11,9 @@ const { Client,
     PermissionString
 } = require('discord.js');
 const WordsFilterSystem = require('./lib/words');
+const LinksFilterSystem = require('./lib/links');
 const SanctionsManager = require('./lib/sanctions');
+
 /**
  * @callback IgnoreMemberFunction
  * @param {GuildMember} member The member to check
@@ -65,11 +67,20 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
+ * Object of Links Filter System
+ * @typedef LinksFilterObject
+ * @property {boolean} globalLinksFilter Whether to filter global links (all links)
+ * @property {boolean} discordInviteLinksFilter Whether to filter discord invite links
+ * @property {boolean} customLinksFilter Whether to filter custom links per guild
+ */
+
+/**
  * Options for the AntiSpam client
  * @typedef AntiSpamClientOptions
  *
  * @property {boolean} [customGuildOptions=false] Whether to use custom guild options
  * @property {boolean} [wordsFilter=false] Whether to use words filter system
+ * @property {Object} [linksFilter] Whether to use links filter system
  * @property {number} [warnThreshold=3] Amount of messages sent in a row that will cause a warning.
  * @property {number} [muteThreshold=4] Amount of messages sent in a row that will cause a mute.
  * @property {number} [kickThreshold=5] Amount of messages sent in a row that will cause a kick.
@@ -166,6 +177,15 @@ class AntiSpamClient extends EventEmitter {
 
             wordsFilter: options.wordsFilter || false,
 
+            /** Enable / Disable Links Filter System
+             * @type {LinksFilterObject} Links Filter System Options
+             */
+            linksFilter: {
+                globalLinksFilter: options.linksFilter.globalLinksFilter || false,
+                customLinksFilter: options.linksFilter.customLinksFilter || false,
+                discordInviteLinksFilter: options.linksFilter.discordInviteLinksFilter || false,
+            },
+
             warnThreshold: options.warnThreshold || 4,
             muteThreshold: options.muteThreshold || 6,
             kickThreshold: options.kickThreshold || 8,
@@ -227,6 +247,9 @@ class AntiSpamClient extends EventEmitter {
         /** Words Filter System */
         this.anti_words = new WordsFilterSystem();
 
+        /** Links Filer System */
+        this.anti_links = new LinksFilterSystem();
+
         /** Sanctions Manager */
         this.sanctions = new SanctionsManager(this);
     }
@@ -248,19 +271,13 @@ class AntiSpamClient extends EventEmitter {
     }
 
     /**
-     * Checks a message.
-     * @param {Message} message The message to check.
-     * @param {AntiSpamClientOptions} _options - The guild options or Global Antispam Client Options
-     * @returns {Promise<boolean>} Whether the message has triggered a threshold.
-     * @example
-     * client.on('message', (msg) => {
-     * 	antiSpam.message(msg);
-     * });
+     * Check All Ignores functions / parameters before run the message functions
+     * If false : can't run / If true : can run
+     * @param {Message} message Message Instance
+     * @param {AntiSpamClientOptions} options Options
+     * @returns {Promise<boolean>}
      */
-    async message (message, _options) {
-        const options = _options || this.options;
-        if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
-
+    async canRun (message, options) {
         if (!message.guild || message.author.id === this.client.user.id
             || (message.guild.ownerId === message.author.id && !options.debug)
             || (options.ignoreBots && message.author.bot)) return false;
@@ -278,7 +295,25 @@ class AntiSpamClient extends EventEmitter {
             : options.ignoredRoles.some((r) => member.roles.cache.has(r))
         if (memberHasIgnoredRoles) return false;
 
-        if (options.ignoredPermissions.some((permission) => member.permissions.has(permission))) return false;
+        return !options.ignoredPermissions.some((permission) => member.permissions.has(permission));
+    }
+
+    /**
+     * Checks a message.
+     * @param {Message} message The message to check.
+     * @param {AntiSpamClientOptions} _options - The guild options or Global Antispam Client Options
+     * @returns {Promise<boolean>} Whether the message has triggered a threshold.
+     * @example
+     * client.on('message', (msg) => {
+     * 	antiSpam.message(msg);
+     * });
+     */
+    async message (message, _options) {
+        const options = _options || this.options;
+        if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
+
+        const can = await this.canRun(message, options);
+        if (!can) return false;
 
         const currentMessage = {
             messageID: message.id,
@@ -372,7 +407,6 @@ class AntiSpamClient extends EventEmitter {
         return sanctioned;
     }
 
-
     /**
      *
      * @param {Message} message Message to Object
@@ -380,34 +414,37 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean|void>}
      */
     async message_wordfilter(message, _options) {
-        // Voir pour appliquer les ignorers.... aussi au système de words filter
         const options = _options || this.options;
         if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
 
-        if (!options.wordsFilter) return false;
-
-        if (!message.guild || message.author.id === this.client.user.id
-            || (message.guild.ownerId === message.author.id && !options.debug)
-            || (options.ignoreBots && message.author.bot)) return false;
-
-        const isMemberIgnored = typeof options.ignoredMembers === 'function' ? options.ignoredMembers(message.member) : options.ignoredMembers.includes(message.author.id)
-        if (isMemberIgnored) return false;
-
-        const isChannelIgnored = typeof options.ignoredChannels === 'function' ? options.ignoredChannels(message.channel) : options.ignoredChannels.includes(message.channel.id)
-        if (isChannelIgnored) return false;
-
-        const member = message.member || await message.guild.members.fetch(message.author);
-
-        const memberHasIgnoredRoles = typeof options.ignoredRoles === 'function'
-            ? options.ignoredRoles(member.roles.cache)
-            : options.ignoredRoles.some((r) => member.roles.cache.has(r))
-        if (memberHasIgnoredRoles) return false;
-
-        if (options.ignoredPermissions.some((permission) => member.permissions.has(permission))) return false;
-
+        const can = await this.canRun(message, options);
+        if (!can) return false;
 
         /** Check if message contain bad words */
         if (await this.anti_words.checkWord(message.cleanContent, message.guild.id)) return true;
+    }
+
+    /**
+     *
+     * @param {Message} message Message to Object
+     * @param {AntiSpamClientOptions} _options The guild options or Global Antispam Client Options
+     * @returns {Promise<boolean>}
+     */
+    async message_linkfilter(message, _options) {
+        const options = _options || this.options;
+        if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
+
+        if (!options.globalLinksFilter && !options.discordInviteLinksFilter && !options.customLinksFilter) return false;
+
+        const can = await this.canRun(message, options);
+        if (!can) return false;
+
+        let contain_links = false;
+        /** Global filter override */
+        if (options.globalLinksFilter) return this.anti_links.hasGlobalLink(message);
+        if (options.discordInviteLinksFilter) contain_links = await this.anti_links.hasDiscordInviteLink(message);
+        if (options.customLinksFilter) contain_links = await this.anti_links.hasCustomLinks(message, message.guild.id);
+        return contain_links;
     }
 
     /**
@@ -422,7 +459,7 @@ class AntiSpamClient extends EventEmitter {
     /**
      * Add a word or words to custom list of words for a guild
      * If function return false, the word(s) is/are already in the list
-     * @param {string|Array<string>} words Word to add
+     * @param {string|Array<string>} words Word(s) to add
      * @param {string} guildId Guild ID
      * @returns {Promise<boolean>}
      */
@@ -431,7 +468,18 @@ class AntiSpamClient extends EventEmitter {
     }
 
     /**
-     *
+     * Add a link or links to custom list of links for a guild
+     * If function return false, the word(s) is/are already in the list
+     * @param {string|Array<string>} links Link(s) to add
+     * @param {string} guildId Guild ID
+     * @returns {Promise<boolean>}
+     */
+    async addLinks(links, guildId) {
+        return this.anti_links.addLinks(links, guildId);
+    }
+
+    /**
+     * Remove a word or words from custom list of words for a guild
      * @param {string|Array<string>} words Word to remove
      * @param {string} guildId Guild ID
      * @returns {Promise<boolean>}
@@ -439,6 +487,18 @@ class AntiSpamClient extends EventEmitter {
     async removeWords(words, guildId) {
         return this.anti_words.removeWords(words, guildId);
     }
+
+    /**
+     *
+     * @param {string|Array<string>} links Links to remove
+     * @param {string} guildId Guild ID
+     * @returns {Promise<boolean>}
+     */
+    async removeLinks(links, guildId) {
+        return this.anti_links.removeLinks(links, guildId);
+    }
+
+
 
     /**
      * Checks if the user left the server to remove him from the cache!
@@ -454,6 +514,10 @@ class AntiSpamClient extends EventEmitter {
         cache.bannedUsers = cache.bannedUsers.filter((u) => u !== member.user.id);
         cache.kickedUsers = cache.kickedUsers.filter((u) => u !== member.user.id);
         cache.warnedUsers = cache.warnedUsers.filter((u) => u !== member.user.id);
+        /** Optimize cache */
+        if (cache.messages.length >= 9999) {
+            cache.messages = [];
+        }
         await this.cache.set(member.guild.id, cache);
 
         return true;
@@ -462,7 +526,7 @@ class AntiSpamClient extends EventEmitter {
     /**
      * Reset the cache of this AntiSpam client instance.
      */
-    async reset (guildID) {
+    async resetGuild (guildID) {
         let cache = {
             messages: [],
             warnedUsers: [],
@@ -471,6 +535,15 @@ class AntiSpamClient extends EventEmitter {
         }
         await this.cache.set(guildID, cache);
     }
+
+    /**
+     * Reset the cache of this AntiSpam client instance.
+     * @returns {Promise<void>}
+     */
+    async resetAllCache () {
+        this.cache = new Collection();
+        return this.cache;
+    }
 }
 
-module.exports = AntiSpamClient
+module.exports = AntiSpamClient;

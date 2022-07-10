@@ -3,6 +3,7 @@ import {
     Client,
     PermissionResolvable,
     Snowflake,
+    Collection,
     User,
     Guild,
     TextChannel,
@@ -26,16 +27,23 @@ declare module 'discordjs-antispam' {
 
         constructor(client: Client, options?: AntiSpamOptions);
 
-        /** Functions */
+        /** Function AntiSpam */
         public message(message: Message, options: AntiSpamOptions): Promise<boolean>;
+
         /** Functions for Words Filter System */
         public message_wordfilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
         public message_badWordsUsages(message: Message): Promise<string[]>;
         public addWords(words: string|string[], guild_id: string): Promise<boolean>;
         public removeWords(words: string|string[], guild_id: string): Promise<boolean>;
 
+        /** Functions for Links Filter System */
+        public message_linkfilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
+        public addLinks(links: string|string[], guild_id: string): Promise<boolean>;
+        public removeLinks(links: string|string[], guild_id: string): Promise<boolean>;
+
         /** Functions utility */
-        public reset(): AntiSpamData;
+        public resetGuild(guild_id: string): AntiSpamData;
+        public resetAllCache(): Promise<Collection<string, AntiSpamData>>;
         public userLeave(member: GuildMember): void;
 
         /** All events (listeners) */
@@ -69,9 +77,16 @@ declare module 'discordjs-antispam' {
         warnedUsers: Snowflake[];
     };
 
+    type LinksFilterObject = {
+        globalLinksFilter?: boolean;
+        customLinksFilter?: boolean;
+        discordInviteLinksFilter?: boolean;
+    }
+
     type AntiSpamOptions = {
         customGuildOptions?: boolean;
         wordsFilter?: boolean;
+        linksFilter?: LinksFilterObject;
         warnThreshold?: number;
         banThreshold?: number;
         kickThreshold?: number;

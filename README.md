@@ -67,7 +67,7 @@ client.on("messageCreate", async (message) => {
     /** Check spam */
     await antiSpam.message(message);
     /** Check words Filter */
-    const containt_badWord = await antiSpam.message_wordfilter(message);
+    const contain_badWord = await antiSpam.message_wordfilter(message);
     /** Get array of bad words containing in the message */
     const badWordsArray = await antiSpam.message_badWordsUsages(message);
 });
@@ -115,7 +115,7 @@ client.on("messageCreate", async (message) => {
     /** Check spam */
     await antiSpam.message(message, guildOptions);
     /** Check words Filter */
-    const containt_badWord = await antiSpam.message_wordfilter(message, guildOptions);
+    const contain_badWord = await antiSpam.message_wordfilter(message, guildOptions);
     /** Get array of bad words containing in the message */
     const badWordsArray = await antiSpam.message_badWordsUsages(message);
     
@@ -132,12 +132,12 @@ client.login("VERY SECRET TOKEN HERE :)");
 
 * ✅ Add and Test: `Words Filter System` (Can configure the words list to filter) 
 * Add and Test: `Discord Anti Links System`
-* Add and Test: `Anti Links System` (Can configure the links to be checked)
+* Add and Test: `Anti Links System` (Can configure links to filter)
 * Add and Test: `Mass Mentions System`
 * Add and Test: `Emojis excessifs System`
 * ✅ Bypass Bots for All Systems *(Can be enabled or Disabled)*
 * Finish the Example for README.md
-* Find a method to clear cache for a guild when the cache is too big.
+* ✅ Find a method to clear cache for a guild when the cache is too big.
 * Create docs for the module
 
 ## 📷 Screenshots
