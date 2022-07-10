@@ -15,7 +15,12 @@
     "moderation",
     "bot",
     "plugin",
-    "module"
+    "module",
+    "auto-moderation",
+    "auto-mod",
+    "discordjs v13",
+    "multi-guilds",
+    "configurable"
   ],
   "repository": {
     "type": "git",
