@@ -30,6 +30,8 @@ declare module 'discordjs-antispam' {
         public message(message: Message, options: AntiSpamOptions): Promise<boolean>;
         public message_wordfilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
         public message_badWordsUsages(message: Message): Promise<string[]>;
+        public addWords(words: string|string[], guild_id: string): Promise<boolean>;
+        public removeWords(words: string|string[], guild_id: string): Promise<boolean>;
         public reset(): AntiSpamData;
         public userLeave(member: GuildMember): void;
 

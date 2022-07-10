@@ -112,7 +112,6 @@ client.login("VERY SECRET TOKEN HERE :)");
 * Add and Test: `Anti Links System` (Can configure the links to be checked)
 * Add and Test: `Mass Mentions System`
 * Add and Test: `Emojis excessifs System`
-* Add and Test: `Repetitive text System`
 * Bypass Bots for All Systems *(Can be enabled or Disabled)*
 * Rename Package to `Auto Moderation Module`
 * Finish the Example for README.md

@@ -669,6 +669,27 @@ class AntiSpamClient extends EventEmitter {
     }
 
     /**
+     * Add a word or words to custom list of words for a guild
+     * If function return false, the word(s) is/are already in the list
+     * @param {string|Array<string>} words Word to add
+     * @param {string} guildId Guild ID
+     * @returns {Promise<boolean>}
+     */
+    async addWords(words, guildId) {
+        return this.anti_words.addWords(words, guildId);
+    }
+
+    /**
+     *
+     * @param {string|Array<string>} words Word to remove
+     * @param {string} guildId Guild ID
+     * @returns {Promise<boolean>}
+     */
+    async removeWords(words, guildId) {
+        return this.anti_words.removeWords(words, guildId);
+    }
+
+    /**
      * Checks if the user left the server to remove him from the cache!
      * @param {GuildMember} member The member to remove from the cache.
      * @returns {Promise<boolean>} Whether the member has been removed
