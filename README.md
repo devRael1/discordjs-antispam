@@ -76,7 +76,6 @@ client.on("ready", () => console.log(`Logged in as ${client.user.tag}.`));
 client.on("messageCreate", async (message) => {
     /** Custom guild options in Object format. */
     const guildOptions = {
-        customGuildOptions: false, // Use custom Guild Options or not
         warnThreshold: 4, // Amount of messages sent in a row that will cause a warning.
         muteThreshold: 6, // Amount of messages sent in a row that will cause a mute
         kickThreshold: 8, // Amount of messages sent in a row that will cause a kick.
