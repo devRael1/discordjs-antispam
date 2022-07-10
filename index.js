@@ -434,7 +434,7 @@ class AntiSpamClient extends EventEmitter {
         const options = _options || this.options;
         if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
 
-        if (!options.globalLinksFilter && !options.discordInviteLinksFilter && !options.customLinksFilter) return false;
+        if (!options.linksFilter.globalLinksFilter && !options.linksFilter.discordInviteLinksFilter && !options.linksFilter.customLinksFilter) return false;
 
         const can = await this.canRun(message, options);
         if (!can) return false;
@@ -497,8 +497,6 @@ class AntiSpamClient extends EventEmitter {
     async removeLinks(links, guildId) {
         return this.anti_links.removeLinks(links, guildId);
     }
-
-
 
     /**
      * Checks if the user left the server to remove him from the cache!
