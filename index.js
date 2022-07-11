@@ -84,6 +84,15 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
+ * Object of MaxDuplicates
+ * @typedef MaxDuplicatesObject
+ * @property {number} [warn=4] Amount of duplicate messages that trigger a warning.
+ * @property {number} [mute=6] Amount of duplicate messages that trigger a mute.
+ * @property {number} [kick=8] Amount of duplicate messages that trigger a kick.
+ * @property {number} [ban=10] Amount of duplicate messages that trigger a ban.
+ */
+
+/**
  * Options for the AntiSpam client
  * @typedef AntiSpamClientOptions
  *
@@ -95,10 +104,7 @@ const SanctionsManager = require('./lib/sanctions');
  * @property {number} [maxInterval=2000] Amount of time (ms) in which messages are considered spam.
  * @property {number} [maxDuplicatesInterval=2000] Amount of time (ms) in which duplicate messages are considered spam.
  *
- * @property {number} [maxDuplicatesWarn=7] Amount of duplicate messages that trigger a warning.
- * @property {number} [maxDuplicatesMute=9] Amount of duplicate messages that trigger a mute.
- * @property {number} [maxDuplicatesKick=10] Amount of duplicate messages that trigger a kick.
- * @property {number} [maxDuplicatesBan=11] Amount of duplicate messages that trigger a ban.
+ * @property {MaxDuplicatesObject} [maxDuplicates] Amount of duplicate messages that trigger a warning.
  *
  * @property {number} [unMuteTime='0'] Time in minutes to wait until unmuting a user.
  * @property {string|Snowflake} [modLogsChannel='mod-logs'] Name or ID of the channel in which moderation logs will be sent.
@@ -181,17 +187,11 @@ class AntiSpamClient extends EventEmitter {
             /** Use customGuildOptions instead of AntiSpam Client Instance Options defaults value */
             customGuildOptions: options.customGuildOptions || false,
             wordsFilter: options.wordsFilter || false,
-            /** Enable / Disable Links Filter System
-             * @type {LinksFilterObject} Links Filter System Options
-             */
             linksFilter: {
                 globalLinksFilter: options.linksFilter.globalLinksFilter || false,
                 customLinksFilter: options.linksFilter.customLinksFilter || false,
                 discordInviteLinksFilter: options.linksFilter.discordInviteLinksFilter || false,
             },
-            /**
-             * @type {ThresholdsObject} Thresholds System Options
-             */
             thresholds: {
                 warn: options.thresholds.warn || 4,
                 mute: options.thresholds.mute || 6,
@@ -201,10 +201,12 @@ class AntiSpamClient extends EventEmitter {
             maxInterval: options.maxInterval || 2000,
             maxDuplicatesInterval: options.maxDuplicatesInterval || 3000,
 
-            maxDuplicatesWarn: options.maxDuplicatesWarn || 4,
-            maxDuplicatesMute: options.maxDuplicatesMute || 6,
-            maxDuplicatesKick: options.maxDuplicatesKick || 8,
-            maxDuplicatesBan: options.maxDuplicatesBan || 10,
+            maxDuplicates: {
+                warn: options.maxDuplicates.warn || 4,
+                mute: options.maxDuplicates.mute || 6,
+                kick: options.maxDuplicates.kick || 8,
+                ban: options.maxDuplicates.ban || 10,
+            },
 
             unMuteTime: options.unMuteTime * 60_000 || 600000,
 
@@ -361,7 +363,7 @@ class AntiSpamClient extends EventEmitter {
             await this.sanctions.appliedSanction('ban', message, spamMatches, options);
             this.emit('banAdd', message.member);
             sanctioned = true;
-        } else if (userCanBeBanned && (duplicateMatches.length >= options.maxDuplicatesBan)) {
+        } else if (userCanBeBanned && (duplicateMatches.length >= options.maxDuplicates.ban)) {
             this.emit('spamThresholdBan', message.member, false);
             await this.sanctions.appliedSanction('ban', message, [...duplicateMatches, ...spamOtherDuplicates], options);
             this.emit('banAdd', message.member);
@@ -375,7 +377,7 @@ class AntiSpamClient extends EventEmitter {
             await this.sanctions.appliedSanction('kick', message, spamMatches, options);
             this.emit('kickAdd', message.member);
             sanctioned = true;
-        } else if (userCanBeKicked && (duplicateMatches.length >= options.maxDuplicatesKick)) {
+        } else if (userCanBeKicked && (duplicateMatches.length >= options.maxDuplicates.kick)) {
             this.emit('spamThresholdKick', message.member, true);
             await this.sanctions.appliedSanction('kick', message, [...duplicateMatches, ...spamOtherDuplicates], options);
             this.emit('kickAdd', message.member);
@@ -389,7 +391,7 @@ class AntiSpamClient extends EventEmitter {
             await this.sanctions.appliedSanction('mute', message, spamMatches, options);
             this.emit('muteAdd', message.member);
             sanctioned = true;
-        } else if (userCanBeMuted && (duplicateMatches.length >= options.maxDuplicatesMute)) {
+        } else if (userCanBeMuted && (duplicateMatches.length >= options.maxDuplicates.mute)) {
             this.emit('spamThresholdMute', message.member, true);
             await this.sanctions.appliedSanction('mute', message, [...duplicateMatches, ...spamOtherDuplicates], options);
             this.emit('muteAdd', message.member);
@@ -403,7 +405,7 @@ class AntiSpamClient extends EventEmitter {
             await this.sanctions.appliedSanction('warn', message, spamMatches, options);
             this.emit('warnAdd', message.member);
             sanctioned = true;
-        } else if (userCanBeWarned && (duplicateMatches.length >= options.maxDuplicatesWarn)) {
+        } else if (userCanBeWarned && (duplicateMatches.length >= options.maxDuplicates.warn)) {
             this.emit('spamThresholdWarn', message.member, true);
             await this.sanctions.appliedSanction('warn', message, [...duplicateMatches, ...spamOtherDuplicates], options);
             this.emit('warnAdd', message.member);
