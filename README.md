@@ -24,109 +24,63 @@ To install this module type the following command in your console:
 npm i @devraelfreeze/discordjs-antispam
 ```
 
-## ⬇️ Examples
-
-### Example of a basic bot handling spam messages using this module.
-
-```js
-const Discord = require("discord.js");
-const client = new Discord.Client({
-    intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES],
-});
-
-const AntiSpam = require("@devraelfreeze/discordjs-antispam");
-const antiSpam = new AntiSpam(client , {
-    customGuildOptions: false, // Use custom Guild Options or not
-    warnThreshold: 4, // Amount of messages sent in a row that will cause a warning.
-    muteThreshold: 6, // Amount of messages sent in a row that will cause a mute
-    kickThreshold: 8, // Amount of messages sent in a row that will cause a kick.
-    banThreshold: 10, // Amount of messages sent in a row that will cause a ban.
-    maxInterval: 2000, // Amount of time (in milliseconds) in which messages are considered spam.
-    warnMessage: "{@user}, Please stop spamming.", // Message that will be sent in chat upon warning a user.
-    kickMessage: "**{user_tag}** has been kicked for spamming.", // Message that will be sent in chat upon kicking a user.
-    muteMessage: "**{user_tag}** has been muted for spamming.", // Message that will be sent in chat upon muting a user.
-    banMessage: "**{user_tag}** has been banned for spamming.", // Message that will be sent in chat upon banning a user.
-    maxDuplicatesWarning: 6, // Amount of duplicate messages that trigger a warning.
-    maxDuplicatesMute: 8, // Ammount of duplicate message that trigger a mute.
-    maxDuplicatesKick: 10, // Amount of duplicate messages that trigger a kick.
-    maxDuplicatesBan: 12, // Amount of duplicate messages that trigger a ban.
-    ignoredPermissions: ["ADMINISTRATOR"], // Bypass users with any of these permissions.
-    ignoreBots: true, // Ignore bot messages.
-    verbose: true, // Extended Logs from module.
-    ignoredMembers: [], // Array of User IDs that get ignored.
-    unMuteTime:  10, // Amount of time (in minutes) a user will be muted for.
-    removeMessages: true, // If the bot should remove all the spam messages when taking action on a user!
-    modLogsEnabled: false, // If to enable modlogs
-    modLogsChannelName: "CHANNEL_ID", // channel ID to send the logs
-    // And many more options...
-});
-
-/** Listeners */
-client.on("ready", () => console.log(`Logged in as ${client.user.tag}.`));
-client.on("messageCreate", async (message) => {
-    /** Check spam */
-    await antiSpam.message(message);
-    /** Check words Filter */
-    const contain_badWord = await antiSpam.message_wordfilter(message);
-    /** Get array of bad words containing in the message */
-    const badWordsArray = await antiSpam.message_badWordsUsages(message);
-});
-/** Login the bot */
-client.login("VERY SECRET TOKEN HERE :)");
-```
-
-### Example of Multi-Guilds
-```js
-const Discord = require("discord.js");
-const client = new Discord.Client({
-  intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES],
-});
-const AntiSpam = require("@devraelfreeze/discordjs-antispam");
-const antiSpam = new AntiSpam(client, {customGuildOptions: true});
-
-/** Listeners */
-client.on("ready", () => console.log(`Logged in as ${client.user.tag}.`));
-client.on("messageCreate", async (message) => {
-    /** Custom guild options in Object */
-    const guildOptions = {
-        warnThreshold: 4, // Amount of messages sent in a row that will cause a warning.
-        muteThreshold: 6, // Amount of messages sent in a row that will cause a mute
-        kickThreshold: 8, // Amount of messages sent in a row that will cause a kick.
-        banThreshold: 10, // Amount of messages sent in a row that will cause a ban.
-        maxInterval: 2000, // Amount of time (in milliseconds) in which messages are considered spam.
-        warnMessage: "{@user}, Please stop spamming.", // Message that will be sent in chat upon warning a user.
-        kickMessage: "**{user_tag}** has been kicked for spamming.", // Message that will be sent in chat upon kicking a user.
-        muteMessage: "**{user_tag}** has been muted for spamming.", // Message that will be sent in chat upon muting a user.
-        banMessage: "**{user_tag}** has been banned for spamming.", // Message that will be sent in chat upon banning a user.
-        maxDuplicatesWarning: 6, // Amount of duplicate messages that trigger a warning.
-        maxDuplicatesMute: 8, // Ammount of duplicate message that trigger a mute.
-        maxDuplicatesKick: 10, // Amount of duplicate messages that trigger a kick.
-        maxDuplicatesBan: 12, // Amount of duplicate messages that trigger a ban.
-        ignoredPermissions: ["ADMINISTRATOR"], // Bypass users with any of these permissions.
-        ignoreBots: true, // Ignore bot messages.
-        verbose: true, // Extended Logs from module.
-        ignoredMembers: [], // Array of User IDs that get ignored.
-        unMuteTime:  10, // Amount of time (in minutes) a user will be muted for.
-        removeMessages: true, // If the bot should remove all the spam messages when taking action on a user!
-        modLogsEnabled: false, // If to enable modlogs
-        modLogsChannelName: "CHANNEL_ID", // channel ID to send the logs
-        // And many more options...
-    };
-    /** Check spam */
-    await antiSpam.message(message, guildOptions);
-    /** Check words Filter */
-    const contain_badWord = await antiSpam.message_wordfilter(message, guildOptions);
-    /** Get array of bad words containing in the message */
-    const badWordsArray = await antiSpam.message_badWordsUsages(message);
-    
-});
-/** Login the bot */
-client.login("VERY SECRET TOKEN HERE :)");
-```
-
 ## ⚙️ AntiSpam Client Options
 // TODO
 
+
+## ⬇️ Examples
+
+### Example: Declare & Use module
+```js
+const Discord = require("discord.js");
+const client = new Discord.Client({
+    intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES,
+    Discord.Intents.FLAGS.GUILD_MEMBERS, Discord.Intents.FLAGS.GUILDS]
+});
+const AntiSpam = require("@devraelfreeze/discordjs-antispam");
+const antiSpam = new AntiSpam(client, {
+    /** Options of AntiSpam Client here */
+});
+client.on("ready", () => console.log(`Logged in as ${client.user.tag}.`));
+client.on("messageCreate", async (message) => {
+    await antiSpam.message(message);
+});
+/** Login the bot */
+client.login("VERY SECRET TOKEN HERE :)");
+```
+---
+### Example: Declare & Use module with custom Guild Options
+```js
+const Discord = require("discord.js");
+const client = new Discord.Client({
+    intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES,
+        Discord.Intents.FLAGS.GUILD_MEMBERS, Discord.Intents.FLAGS.GUILDS]
+});
+const AntiSpam = require("@devraelfreeze/discordjs-antispam");
+const antiSpam = new AntiSpam(client, {customGuildOptions: true});
+client.on("ready", () => console.log(`Logged in as ${client.user.tag}.`));
+client.on("messageCreate", async (message) => {
+    /** Custom guild options in Object */
+    const guildOptions = {/** Options of AntiSpam */};
+    await antiSpam.message(message, guildOptions);
+});
+/** Login the bot */
+client.login("VERY SECRET TOKEN HERE :)");
+```
+---
+### Example: Use Words Filter System (Functions)
+```js
+/** Declare & Use module with messageCreate event 
+ [See above for many examples] */
+
+````
+---
+### Example: Use Links / Discord Invite Filter System (Functions)
+```js
+/** Declare & Use module with messageCreate event 
+ [See above for many examples] */
+
+````
 
 ## ⏳ TODO
 
