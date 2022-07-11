@@ -102,6 +102,15 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
+ * Object of Error Message
+ * @typedef ErrorMessageObject
+ * @property {boolean} [enabled=true] Whether the bot should send a message in the channel when it doesn't have some required permissions, like it can't kick members.
+ * @property {string} [mute='Could not mute **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to mute the member (to timeout member).
+ * @property {string} [kick='Could not kick **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to kick the member.
+ * @property {string} [ban='Could not ban **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to ban the member.
+ */
+
+/**
  * Options for the AntiSpam client
  * @typedef AntiSpamClientOptions
  *
@@ -120,11 +129,7 @@ const SanctionsManager = require('./lib/sanctions');
  * @property {boolean} [modLogsEnabled=false] Whether moderation logs are enabled.
  *
  * @property {MessageObject} [message] Message that will be sent in the channel when someone is warned.
- *
- * @property {boolean} [errorMessages=true] Whether the bot should send a message in the channel when it doesn't have some required permissions, like it can't kick members.
- * @property {string} [kickErrorMessage='Could not kick **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to kick the member.
- * @property {string} [banErrorMessage='Could not ban **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to mute the member (to add the mute role).
- * @property {string} [muteErrorMessage='Could not mute **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to ban the member.
+ * @property {ErrorMessageObject} [errorMessage] Whether the bot should send a message in the channel when it doesn't have some required permissions, like it can't kick members.
  *
  * @property {Snowflake|string[]|IgnoreMemberFunction} [ignoredMembers=[]] Array of member IDs that are ignored.
  * @property {Snowflake|string[]|IgnoreRoleFunction} [ignoredRoles=[]] Array of role IDs or role names that are ignored. Members with one of these roles will be ignored.
@@ -226,10 +231,12 @@ class AntiSpamClient extends EventEmitter {
                 ban: options.message.ban || '**{user_tag}** has been banned for spamming.',
             },
 
-            errorMessages: options.errorMessages !== undefined ? options.errorMessages : true,
-            kickErrorMessage: options.kickErrorMessage || 'Could not kick **{user_tag}** because of improper permissions.',
-            banErrorMessage: options.banErrorMessage || 'Could not ban **{user_tag}** because of improper permissions.',
-            muteErrorMessage: options.muteErrorMessage || 'Could not mute **{user_tag}** because of improper permissions.',
+            errorMessage: {
+                enabled: options.errorMessage.enabled || true,
+                mute: options.errorMessage.mute || 'Could not mute **{user_tag}** because of improper permissions.',
+                kick: options.errorMessage.kick || 'Could not kick **{user_tag}** because of improper permissions.',
+                ban: options.errorMessage.ban || 'Could not ban **{user_tag}** because of improper permissions.',
+            },
 
             ignoredMembers: options.ignoredMembers || [],
             ignoredRoles: options.ignoredRoles || [],

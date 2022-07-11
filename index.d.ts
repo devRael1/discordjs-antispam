@@ -104,6 +104,13 @@ declare module 'discordjs-antispam' {
         ban?: string | MessageEmbed;
     }
 
+    type ErrorMessageObject = {
+        enabled?: boolean;
+        mute?: string;
+        kick?: string;
+        ban?: string;
+    }
+
     type AntiSpamOptions = {
         customGuildOptions?: boolean;
         wordsFilter?: boolean;
@@ -113,17 +120,11 @@ declare module 'discordjs-antispam' {
         maxDuplicatesInterval?: number;
         maxDuplicates?: maxDuplicatesObject;
         message?: MessageObject;
+        errorMessage?: ErrorMessageObject;
         unMuteTime?: number;
         deleteMessagesAfterBanForPastDays?: number;
         ignoredPermissions?: PermissionResolvable[];
         ignoreBots?: boolean;
-        verbose?: boolean;
-        debug?: boolean;
-        errorMessages?: boolean;
-        kickErrorMessage?: string;
-        banErrorMessage?: string;
-        muteErrorMessage?: string;
-        warnErrorMessage?: string;
         ignoredMembers?: Snowflake[] | ((user: User) => boolean);
         ignoredRoles?: (Snowflake | string)[] | ((role: Role) => boolean);
         ignoredGuilds?: Snowflake[] | ((guild: Guild) => boolean);
@@ -135,5 +136,7 @@ declare module 'discordjs-antispam' {
         modLogsChannelName?: string;
         modLogsEnabled?: boolean;
         removeMessages?: boolean;
+        verbose?: boolean;
+        debug?: boolean;
     };
 }
