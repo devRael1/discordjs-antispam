@@ -97,6 +97,13 @@ declare module 'discordjs-antispam' {
         ban?: number;
     }
 
+    type MessageObject = {
+        warn?: string | MessageEmbed;
+        mute?: string | MessageEmbed;
+        kick?: string | MessageEmbed;
+        ban?: string | MessageEmbed;
+    }
+
     type AntiSpamOptions = {
         customGuildOptions?: boolean;
         wordsFilter?: boolean;
@@ -104,11 +111,8 @@ declare module 'discordjs-antispam' {
         thresholds?: ThresholdsObject;
         maxInterval?: number;
         maxDuplicatesInterval?: number;
-        maxDuplicatesObject?: maxDuplicatesObject;
-        warnMessage?: string | MessageEmbed;
-        banMessage?: string | MessageEmbed;
-        kickMessage?: string | MessageEmbed;
-        muteMessage?: string | MessageEmbed;
+        maxDuplicates?: maxDuplicatesObject;
+        message?: MessageObject;
         unMuteTime?: number;
         deleteMessagesAfterBanForPastDays?: number;
         ignoredPermissions?: PermissionResolvable[];

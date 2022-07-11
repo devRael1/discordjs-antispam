@@ -93,27 +93,33 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
+ * Object of Message
+ * @typedef MessageObject
+ * @property {string|MessageEmbed} [warn='{@user}, Please stop spamming.'] Message that will be sent in the channel when someone is warned.
+ * @property {string|MessageEmbed} [mute='**{user_tag}** has been kicked for spamming.'] Message that will be sent in the channel when someone is muted.
+ * @property {string|MessageEmbed} [kick='**{user_tag}** has been kicked for spamming.'] Message that will be sent in the channel when someone is kicked.
+ * @property {string|MessageEmbed} [ban='**{user_tag}** has been banned for spamming.'] Message that will be sent in the channel when someone is banned.
+ */
+
+/**
  * Options for the AntiSpam client
  * @typedef AntiSpamClientOptions
  *
  * @property {boolean} [customGuildOptions=false] Whether to use custom guild options
  * @property {boolean} [wordsFilter=false] Whether to use words filter system
  * @property {LinksFilterObject} [linksFilter] Whether to use links filter system
- * @property {ThresholdsObject} [thresholds] Thresholds for the AntiSpam client
+ * @property {ThresholdsObject} [thresholds] Amount of messages sent in a row that will cause a warning / mute / kick / ban.
  *
  * @property {number} [maxInterval=2000] Amount of time (ms) in which messages are considered spam.
  * @property {number} [maxDuplicatesInterval=2000] Amount of time (ms) in which duplicate messages are considered spam.
  *
- * @property {MaxDuplicatesObject} [maxDuplicates] Amount of duplicate messages that trigger a warning.
+ * @property {MaxDuplicatesObject} [maxDuplicates] Amount of duplicate messages that trigger a warning / mute / kick / ban.
  *
  * @property {number} [unMuteTime='0'] Time in minutes to wait until unmuting a user.
  * @property {string|Snowflake} [modLogsChannel='mod-logs'] Name or ID of the channel in which moderation logs will be sent.
  * @property {boolean} [modLogsEnabled=false] Whether moderation logs are enabled.
  *
- * @property {string|MessageEmbed} [warnMessage='{@user}, Please stop spamming.'] Message that will be sent in the channel when someone is warned.
- * @property {string|MessageEmbed} [kickMessage='**{user_tag}** has been kicked for spamming.'] Message that will be sent in the channel when someone is kicked.
- * @property {string|MessageEmbed} [muteMessage='**{user_tag}** has been muted for spamming.'] Message that will be sent in the channel when someone is muted.
- * @property {string|MessageEmbed} [banMessage='**{user_tag}** has been banned for spamming.'] Message that will be sent in the channel when someone is banned.
+ * @property {MessageObject} [message] Message that will be sent in the channel when someone is warned.
  *
  * @property {boolean} [errorMessages=true] Whether the bot should send a message in the channel when it doesn't have some required permissions, like it can't kick members.
  * @property {string} [kickErrorMessage='Could not kick **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to kick the member.
@@ -213,10 +219,12 @@ class AntiSpamClient extends EventEmitter {
             modLogsChannel: options.modLogsChannel || 'CHANNEL_ID',
             modLogsEnabled: options.modLogsEnabled || false,
 
-            warnMessage: options.warnMessage || '{@user}, Please stop spamming.',
-            muteMessage: options.muteMessage || '**{user_tag}** has been muted for spamming.',
-            kickMessage: options.kickMessage || '**{user_tag}** has been kicked for spamming.',
-            banMessage: options.banMessage || '**{user_tag}** has been banned for spamming.',
+            message: {
+                warn: options.message.warn || '{@user}, Please stop spamming.',
+                kick: options.message.kick || '**{user_tag}** has been kicked for spamming.',
+                mute: options.message.mute || '**{user_tag}** has been muted for spamming.',
+                ban: options.message.ban || '**{user_tag}** has been banned for spamming.',
+            },
 
             errorMessages: options.errorMessages !== undefined ? options.errorMessages : true,
             kickErrorMessage: options.kickErrorMessage || 'Could not kick **{user_tag}** because of improper permissions.',
