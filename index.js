@@ -12,6 +12,7 @@ const { Client,
 const WordsFilterSystem = require('./lib/words');
 const LinksFilterSystem = require('./lib/links');
 const SanctionsManager = require('./lib/sanctions');
+const LogsManager = require('./lib/logs');
 
 /**
  * @callback IgnoreMemberFunction
@@ -179,7 +180,6 @@ const SanctionsManager = require('./lib/sanctions');
  * @property {CachedMessage[]} messages Array of cached messages, used to detect spam.
  */
 
-
 // noinspection JSCheckFunctionSignatures
 /** Main Class AntiSpam */
 class AntiSpamClient extends EventEmitter {
@@ -189,6 +189,7 @@ class AntiSpamClient extends EventEmitter {
      */
     constructor (client, options) {
         super();
+
         /**
          * The Client Instance
          * @type {Client}
@@ -196,10 +197,11 @@ class AntiSpamClient extends EventEmitter {
         this.client = client;
 
         /**
-         * The options for this AntiSpam client instance
+         * Default value of the options
          * @type {AntiSpamClientOptions}
+         * @private
          */
-        this.options = options.customGuildOptions ? undefined : {
+        this._defaultOptions = {
             /** Use customGuildOptions instead of AntiSpam Client Instance Options defaults value */
             customGuildOptions: options.customGuildOptions || false,
             wordsFilter: options.wordsFilter || false,
@@ -254,7 +256,19 @@ class AntiSpamClient extends EventEmitter {
             verbose: options.verbose || false,
             debug: options.debug || false,
             removeMessages: options.removeMessages !== undefined ? options.removeMessages : true,
-        }
+        };
+
+        /**
+         * The options for this AntiSpam client instance
+         * @type {AntiSpamClientOptions}
+         */
+        this.options = options.customGuildOptions ? undefined : this._defaultOptions;
+
+        /**
+         * Logs Manager
+         * @type {LogsManager}
+         */
+        this.logs = new LogsManager(this);
 
         /**
          * The cache for this AntiSpam client instance
@@ -269,13 +283,28 @@ class AntiSpamClient extends EventEmitter {
          */
         this.cache = new Collection();
 
-        /** Words Filter System */
+        /**
+         * Guilds Cache for this AntiSpam client instance
+         * @type {Collection<Snowflake, AntiSpamClientOptions>}
+         */
+        this.guildOptions = new Collection();
+
+        /**
+         * Words Filter System
+         * @type {WordsFilterSystem}
+         */
         this.anti_words = new WordsFilterSystem();
 
-        /** Links Filer System */
+        /**
+         * Links Filer System
+         * @type {LinksFilterSystem}
+         */
         this.anti_links = new LinksFilterSystem();
 
-        /** Sanctions Manager */
+        /**
+         * Sanctions Manager
+         * @type {SanctionsManager}
+         */
         this.sanctions = new SanctionsManager(this);
     }
 
@@ -293,6 +322,53 @@ class AntiSpamClient extends EventEmitter {
             });
         }
         return this.cache.get(guildID);
+    }
+
+    /**
+     * Get guild Options for a guild
+     * @param {string} guildID Guild ID
+     */
+    async getGuildOptions (guildID) {
+        return this.guildOptions.get(guildID);
+    }
+
+    /**
+     *
+     * @param {string} guildID Guild ID
+     * @param {AntiSpamClientOptions} options The options for the guild
+     */
+    async setGuildOptions (guildID, options) {
+        this.guildOptions.set(guildID, options);
+        return this.guildOptions.get(guildID);
+    }
+
+    /**
+     * Delete spam messages
+     * @ignore
+     * @param {CachedMessage[]} messages The messages to delete
+     * @param {AntiSpamClientOptions} options options of the guild or AntiSpam Instance
+     * @returns {Promise<void>}
+     */
+    async clearSpamMessages (messages, options) {
+        try {
+            let _messages = [];
+            let _channel;
+            await Promise.all(messages.map(async (message) => {
+                const channel = await this.client.channels.cache.get(message.channelID)
+                if (channel) {
+                    const msg = await channel.messages.cache.get(message.messageID);
+                    if (msg && msg.deletable) _messages.push(msg);
+                    _channel = channel;
+                }
+            }));
+            await _channel.bulkDelete(_messages).catch(err => {
+                if (err && options.debug === true) return this.logs.logsError('Discord AntiSpam (clearSpamMessages#failed): The message(s) couldn\'t be deleted', options);
+            });
+        } catch (e) {
+            if (options.debug) {
+                await this.logs.logsError('Discord AntiSpam (clearSpamMessages#failed): The message(s) couldn\'t be deleted!', options);
+            }
+        }
     }
 
     /**
@@ -324,16 +400,16 @@ class AntiSpamClient extends EventEmitter {
     /**
      * Checks a message.
      * @param {Message} message The message to check.
-     * @param {AntiSpamClientOptions} _options - The guild options or Global Antispam Client Options
      * @returns {Promise<boolean>} Whether the message has triggered a threshold.
      * @example
      * client.on('message', (msg) => {
      * 	antiSpam.message(msg);
      * });
      */
-    async message (message, _options) {
-        const options = _options || this.options;
-        if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
+    async message (message) {
+        // Guild Options is priority
+        const options = await this.getGuildOptions(message.guild.id) || this.options;
+        if (!options) return this.logs.logsError('Discord AntiSpam (message#failed): No options found!', options);
 
         const can = await this.canRun(message, options);
         if (!can) return false;
@@ -433,12 +509,11 @@ class AntiSpamClient extends EventEmitter {
     /**
      *
      * @param {Message} message Message to Object
-     * @param {AntiSpamClientOptions} _options - The guild options or Global Antispam Client Options
      * @returns {Promise<boolean|void>}
      */
-    async messageWordsFilter(message, _options) {
-        const options = _options || this.options;
-        if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
+    async messageWordsFilter(message) {
+        const options = await this.getGuildOptions(message.guild.id) || this.options;
+        if (!options) return this.logs.logsError('Discord AntiSpam (message#failed): No options found!', options);
 
         const can = await this.canRun(message, options);
         if (!can) return false;
@@ -450,12 +525,11 @@ class AntiSpamClient extends EventEmitter {
     /**
      *
      * @param {Message} message Message to Object
-     * @param {AntiSpamClientOptions} _options The guild options or Global Antispam Client Options
      * @returns {Promise<boolean>}
      */
-    async messageLinksFilter(message, _options) {
-        const options = _options || this.options;
-        if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
+    async messageLinksFilter(message) {
+        const options = await this.getGuildOptions(message.guild.id) || this.options;
+        if (!options) return this.logs.logsError('Discord AntiSpam (message#failed): No options found!', options);
 
         if (!options.linksFilter.globalLinksFilter && !options.linksFilter.discordInviteLinksFilter && !options.linksFilter.customLinksFilter) return false;
 
@@ -476,6 +550,8 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<Array.string>}
      */
     async messageBadWordsUsages(message) {
+        const options = await this.getGuildOptions(message.guild.id) || this.options;
+        if (!message) return this.logs.logsError('Discord AntiSpam (messageBadWordsUsages#failed): No message found!', options);
         return this.anti_words.checkBadWordsUsages(message.cleanContent, message.guild.id);
     }
 
@@ -487,6 +563,8 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>}
      */
     async addWords(words, guildId) {
+        const options = await this.getGuildOptions(guildId) || this.options;
+        if (!words || !guildId) return this.logs.logsError('Discord AntiSpam (addWords#failed): No words or Guild ID given !', options);
         return this.anti_words.addWords(words, guildId);
     }
 
@@ -498,6 +576,8 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>}
      */
     async addLinks(links, guildId) {
+        const options = await this.getGuildOptions(guildId) || this.options;
+        if (!links || !guildId) return this.logs.logsError('Discord AntiSpam (addLinks#failed): No links or Guild ID given !', options);
         return this.anti_links.addLinks(links, guildId);
     }
 
@@ -508,6 +588,8 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>}
      */
     async removeWords(words, guildId) {
+        const options = await this.getGuildOptions(guildId) || this.options;
+        if (!words || !guildId) return this.logs.logsError('Discord AntiSpam (removeWords#failed): No words or Guild ID given !', options);
         return this.anti_words.removeWords(words, guildId);
     }
 
@@ -518,6 +600,8 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>}
      */
     async removeLinks(links, guildId) {
+        const options = await this.getGuildOptions(guildId) || this.options;
+        if (!links || !guildId) return this.logs.logsError('Discord AntiSpam (removeLinks#failed): No links or Guild ID given !', options);
         return this.anti_links.removeLinks(links, guildId);
     }
 

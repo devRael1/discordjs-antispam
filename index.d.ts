@@ -26,6 +26,10 @@ declare module 'discordjs-antispam' {
 
         constructor(client: Client, options?: AntiSpamOptions);
 
+        /** Functions Guilds Options Management */
+        public getGuildOptions(guildId: string): Promise<AntiSpamOptions>;
+        public setGuildOptions(guildId: string, options: AntiSpamOptions): Promise<AntiSpamOptions>;
+
         /** Function AntiSpam */
         public message(message: Message, options: AntiSpamOptions): Promise<boolean>;
 
