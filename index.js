@@ -5,7 +5,6 @@ const { Client,
     Snowflake,
     Role,
     Collection,
-    Guild,
     MessageEmbed,
     TextChannel,
     PermissionString
@@ -24,12 +23,6 @@ const SanctionsManager = require('./lib/sanctions');
  * @callback IgnoreRoleFunction
  * @param {Collection<Snowflake, Role>} role The role to check
  * @returns {boolean} Whether the user should be ignored
- */
-
-/**
- * @callback IgnoreGuildFunction
- * @param {Guild} guild The guild to check
- * @returns {boolean} Whether the guild should be ignored
  */
 
 /**
@@ -111,6 +104,16 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
+ * Object of Ignore System
+ * @typedef IgnoreSystemObject
+ * @property {Snowflake|string[]|IgnoreMemberFunction} [members=[]] Array of member IDs that are ignored.
+ * @property {Snowflake|string[]|IgnoreRoleFunction} [roles=[]] Array of role IDs or role names that are ignored. Members with one of these roles will be ignored.
+ * @property {Snowflake|string[]|IgnoreChannelFunction} [channels=[]] Array of channel IDs or channel names that are ignored.
+ * @property {PermissionString[]} [permissions=[]] Users with at least one of these permissions will be ignored.
+ * @property {boolean} [bots=true] Whether bots should be ignored.
+ */
+
+/**
  * Options for the AntiSpam client
  * @typedef AntiSpamClientOptions
  *
@@ -131,10 +134,7 @@ const SanctionsManager = require('./lib/sanctions');
  * @property {MessageObject} [message] Message that will be sent in the channel when someone is warned.
  * @property {ErrorMessageObject} [errorMessage] Whether the bot should send a message in the channel when it doesn't have some required permissions, like it can't kick members.
  *
- * @property {Snowflake|string[]|IgnoreMemberFunction} [ignoredMembers=[]] Array of member IDs that are ignored.
- * @property {Snowflake|string[]|IgnoreRoleFunction} [ignoredRoles=[]] Array of role IDs or role names that are ignored. Members with one of these roles will be ignored.
- * @property {Snowflake|string[]|IgnoreChannelFunction} [ignoredChannels=[]] Array of channel IDs or channel names that are ignored.
- * @property {PermissionString[]} [ignoredPermissions=[]] Users with at least one of these permissions will be ignored.
+ * @property {IgnoreSystemObject} [ignore] Whether to ignore certain members or channels or permissions or roles or bots.
  * @property {boolean} [ignoreBots=true] Whether bots should be ignored.
  *
  * @property {boolean} [warnEnabled=true] Whether warn sanction is enabled.
@@ -199,9 +199,9 @@ class AntiSpamClient extends EventEmitter {
             customGuildOptions: options.customGuildOptions || false,
             wordsFilter: options.wordsFilter || false,
             linksFilter: {
-                globalLinksFilter: options.linksFilter.globalLinksFilter || false,
-                customLinksFilter: options.linksFilter.customLinksFilter || false,
-                discordInviteLinksFilter: options.linksFilter.discordInviteLinksFilter || false,
+                globalLinksFilter: options.linksFilter.globalLinksFilter !== undefined ? options.linksFilter.globalLinksFilter : false,
+                customLinksFilter: options.linksFilter.customLinksFilter !== undefined ? options.linksFilter.customLinksFilter : false,
+                discordInviteLinksFilter: options.linksFilter.discordInviteLinksFilter ? options.linksFilter.discordInviteLinksFilter : false,
             },
             thresholds: {
                 warn: options.thresholds.warn || 4,
@@ -232,17 +232,19 @@ class AntiSpamClient extends EventEmitter {
             },
 
             errorMessage: {
-                enabled: options.errorMessage.enabled || true,
+                enabled: options.errorMessage.enabled !== undefined ? options.errorMessage.enabled : true,
                 mute: options.errorMessage.mute || 'Could not mute **{user_tag}** because of improper permissions.',
                 kick: options.errorMessage.kick || 'Could not kick **{user_tag}** because of improper permissions.',
                 ban: options.errorMessage.ban || 'Could not ban **{user_tag}** because of improper permissions.',
             },
 
-            ignoredMembers: options.ignoredMembers || [],
-            ignoredRoles: options.ignoredRoles || [],
-            ignoredChannels: options.ignoredChannels || [],
-            ignoredPermissions: options.ignoredPermissions || [],
-            ignoreBots: options.ignoreBots !== undefined ? options.ignoreBots : true,
+            ignore: {
+                members: options.ignore.members || [],
+                channels: options.ignore.channels || [],
+                permissions: options.ignore.permissions || [],
+                roles: options.ignore.roles || [],
+                bots: options.ignore.bots !== undefined ? options.ignore.bots : true,
+            },
 
             warnEnabled: options.warnEnabled !== undefined ? options.warnEnabled : true,
             kickEnabled: options.kickEnabled !== undefined ? options.kickEnabled : true,
@@ -306,20 +308,18 @@ class AntiSpamClient extends EventEmitter {
             || (message.guild.ownerId === message.author.id && !options.debug)
             || (options.ignoreBots && message.author.bot)) return false;
 
-        const isMemberIgnored = typeof options.ignoredMembers === 'function' ? options.ignoredMembers(message.member) : options.ignoredMembers.includes(message.author.id)
+        const isMemberIgnored = typeof options.ignore.members === 'function' ? options.ignore.members(message.member) : options.ignore.members.includes(message.author.id)
         if (isMemberIgnored) return false;
 
-        const isChannelIgnored = typeof options.ignoredChannels === 'function' ? options.ignoredChannels(message.channel) : options.ignoredChannels.includes(message.channel.id)
+        const isChannelIgnored = typeof options.ignore.channels === 'function' ? options.ignore.channels(message.channel) : options.ignore.channels.includes(message.channel.id)
         if (isChannelIgnored) return false;
 
         const member = message.member || await message.guild.members.cache.get(message.author.id);
 
-        const memberHasIgnoredRoles = typeof options.ignoredRoles === 'function'
-            ? options.ignoredRoles(member.roles.cache)
-            : options.ignoredRoles.some((r) => member.roles.cache.has(r))
+        const memberHasIgnoredRoles = typeof options.ignore.roles === 'function' ? options.ignore.roles(member.roles.cache) : options.ignore.roles.some((r) => member.roles.cache.has(r))
         if (memberHasIgnoredRoles) return false;
 
-        return !options.ignoredPermissions.some((permission) => member.permissions.has(permission));
+        return !options.ignore.permissions.some((permission) => member.permissions.has(permission));
     }
 
     /**

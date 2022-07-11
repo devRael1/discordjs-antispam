@@ -5,7 +5,6 @@ import {
     Snowflake,
     Collection,
     User,
-    Guild,
     TextChannel,
     GuildMember,
     Message,
@@ -111,6 +110,13 @@ declare module 'discordjs-antispam' {
         ban?: string;
     }
 
+    type IngoreObject = {
+        members?: Snowflake[] | ((user: User) => boolean);
+        roles?: Snowflake[] | ((role: Role) => boolean);
+        channels?: Snowflake[] | ((channel: TextChannel) => boolean);
+        bots?: boolean;
+    }
+
     type AntiSpamOptions = {
         customGuildOptions?: boolean;
         wordsFilter?: boolean;
@@ -124,11 +130,7 @@ declare module 'discordjs-antispam' {
         unMuteTime?: number;
         deleteMessagesAfterBanForPastDays?: number;
         ignoredPermissions?: PermissionResolvable[];
-        ignoreBots?: boolean;
-        ignoredMembers?: Snowflake[] | ((user: User) => boolean);
-        ignoredRoles?: (Snowflake | string)[] | ((role: Role) => boolean);
-        ignoredGuilds?: Snowflake[] | ((guild: Guild) => boolean);
-        ignoredChannels?: Snowflake[] | ((channel: TextChannel) => boolean);
+        ignore?: IngoreObject;
         warnEnabled?: boolean;
         kickEnabled?: boolean;
         banEnabled?: boolean;
