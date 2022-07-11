@@ -218,6 +218,7 @@ client.on("messageCreate", async (message) => {
 
 ## ⏳ TODO
 
+* Add support of multi-guilds (Use Collection Cache)
 * ✅ Add and Test: `Words Filter System` (Can configure the words list to filter) 
 * Add and Test: `Discord Anti Links System`
 * Add and Test: `Anti Links System` (Can configure links to filter)
