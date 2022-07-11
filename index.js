@@ -135,7 +135,6 @@ const SanctionsManager = require('./lib/sanctions');
  * @property {ErrorMessageObject} [errorMessage] Whether the bot should send a message in the channel when it doesn't have some required permissions, like it can't kick members.
  *
  * @property {IgnoreSystemObject} [ignore] Whether to ignore certain members or channels or permissions or roles or bots.
- * @property {boolean} [ignoreBots=true] Whether bots should be ignored.
  *
  * @property {boolean} [warnEnabled=true] Whether warn sanction is enabled.
  * @property {boolean} [kickEnabled=true] Whether kick sanction is enabled.
@@ -183,7 +182,7 @@ class AntiSpamClient extends EventEmitter {
      * @param {AntiSpamClientOptions} options The options for this AntiSpam client instance
      */
     constructor (client, options) {
-        super()
+        super();
         /**
          * The Client Instance
          * @type {Client}
@@ -306,7 +305,7 @@ class AntiSpamClient extends EventEmitter {
     async canRun (message, options) {
         if (!message.guild || message.author.id === this.client.user.id
             || (message.guild.ownerId === message.author.id && !options.debug)
-            || (options.ignoreBots && message.author.bot)) return false;
+            || (options.ignore.bots && message.author.bot)) return false;
 
         const isMemberIgnored = typeof options.ignore.members === 'function' ? options.ignore.members(message.member) : options.ignore.members.includes(message.author.id)
         if (isMemberIgnored) return false;
