@@ -68,7 +68,7 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
- * Object of Thresholds
+ * Object of Thresholds System
  * @typedef ThresholdsObject
  * @property {number} [warn=4] Amount of messages sent in a row that will cause a warning.
  * @property {number} [mute=6] Amount of messages sent in a row that will cause a mute.
@@ -77,7 +77,7 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
- * Object of MaxDuplicates
+ * Object of MaxDuplicates System
  * @typedef MaxDuplicatesObject
  * @property {number} [warn=4] Amount of duplicate messages that trigger a warning.
  * @property {number} [mute=6] Amount of duplicate messages that trigger a mute.
@@ -86,7 +86,7 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
- * Object of Message
+ * Object of Message System
  * @typedef MessageObject
  * @property {string|MessageEmbed} [warn='{@user}, Please stop spamming.'] Message that will be sent in the channel when someone is warned.
  * @property {string|MessageEmbed} [mute='**{user_tag}** has been kicked for spamming.'] Message that will be sent in the channel when someone is muted.
@@ -114,6 +114,15 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
+ * Object of Enabled System
+ * @typedef EnabledSystemObject
+ * @property {boolean} [warn=true] Whether to enable warnings.
+ * @property {boolean} [mute=true] Whether to enable mutes.
+ * @property {boolean} [kick=true] Whether to enable kicks.
+ * @property {boolean} [ban=true] Whether to enable bans.
+ */
+
+/**
  * Options for the AntiSpam client
  * @typedef AntiSpamClientOptions
  *
@@ -136,10 +145,7 @@ const SanctionsManager = require('./lib/sanctions');
  *
  * @property {IgnoreSystemObject} [ignore] Whether to ignore certain members or channels or permissions or roles or bots.
  *
- * @property {boolean} [warnEnabled=true] Whether warn sanction is enabled.
- * @property {boolean} [kickEnabled=true] Whether kick sanction is enabled.
- * @property {boolean} [muteEnabled=true] Whether mute sanction is enabled.
- * @property {boolean} [banEnabled=true] Whether ban sanction is enabled.
+ * @property {EnabledSystemObject} [enable] Enable / Disable warns / mutes / kicks / bans.
  *
  * @property {number} [deleteMessagesAfterBanForPastDays=1] When a user is banned, their messages sent in the last x days will be deleted.
  * @property {boolean} [verbose=false] Extended logs from module (recommended).
@@ -210,33 +216,27 @@ class AntiSpamClient extends EventEmitter {
             },
             maxInterval: options.maxInterval || 2000,
             maxDuplicatesInterval: options.maxDuplicatesInterval || 3000,
-
             maxDuplicates: {
                 warn: options.maxDuplicates.warn || 4,
                 mute: options.maxDuplicates.mute || 6,
                 kick: options.maxDuplicates.kick || 8,
                 ban: options.maxDuplicates.ban || 10,
             },
-
             unMuteTime: options.unMuteTime * 60_000 || 600000,
-
             modLogsChannel: options.modLogsChannel || 'CHANNEL_ID',
             modLogsEnabled: options.modLogsEnabled || false,
-
             message: {
                 warn: options.message.warn || '{@user}, Please stop spamming.',
                 kick: options.message.kick || '**{user_tag}** has been kicked for spamming.',
                 mute: options.message.mute || '**{user_tag}** has been muted for spamming.',
                 ban: options.message.ban || '**{user_tag}** has been banned for spamming.',
             },
-
             errorMessage: {
                 enabled: options.errorMessage.enabled !== undefined ? options.errorMessage.enabled : true,
                 mute: options.errorMessage.mute || 'Could not mute **{user_tag}** because of improper permissions.',
                 kick: options.errorMessage.kick || 'Could not kick **{user_tag}** because of improper permissions.',
                 ban: options.errorMessage.ban || 'Could not ban **{user_tag}** because of improper permissions.',
             },
-
             ignore: {
                 members: options.ignore.members || [],
                 channels: options.ignore.channels || [],
@@ -244,12 +244,12 @@ class AntiSpamClient extends EventEmitter {
                 roles: options.ignore.roles || [],
                 bots: options.ignore.bots !== undefined ? options.ignore.bots : true,
             },
-
-            warnEnabled: options.warnEnabled !== undefined ? options.warnEnabled : true,
-            kickEnabled: options.kickEnabled !== undefined ? options.kickEnabled : true,
-            muteEnabled: options.muteEnabled !== undefined ? options.muteEnabled : true,
-            banEnabled: options.banEnabled !== undefined ? options.banEnabled : true,
-
+            enable: {
+                warn: options.enable.warn !== undefined ? options.enable.warn : true,
+                mute: options.enable.mute !== undefined ? options.enable.mute : true,
+                kick: options.enable.kick !== undefined ? options.enable.kick : true,
+                ban: options.enable.ban !== undefined ? options.enable.ban : true,
+            },
             deleteMessagesAfterBanForPastDays: options.deleteMessagesAfterBanForPastDays || 1,
             verbose: options.verbose || false,
             debug: options.debug || false,
@@ -371,7 +371,7 @@ class AntiSpamClient extends EventEmitter {
         let sanctioned = false;
 
         /** BAN SANCTION */
-        const userCanBeBanned = options.banEnabled && !cache.bannedUsers.includes(message.author.id) && !sanctioned;
+        const userCanBeBanned = options.enable.ban && !cache.bannedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeBanned && (spamMatches.length >= options.thresholds.ban)) {
             this.emit('spamThresholdBan', message.member, false);
             await this.sanctions.appliedSanction('ban', message, spamMatches, options);
@@ -385,7 +385,7 @@ class AntiSpamClient extends EventEmitter {
         }
 
         /** KICK SANCTION */
-        const userCanBeKicked = options.kickEnabled && !cache.kickedUsers.includes(message.author.id) && !sanctioned;
+        const userCanBeKicked = options.enable.kick && !cache.kickedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeKicked && (spamMatches.length >= options.thresholds.kick)) {
             this.emit('spamThresholdKick', message.member, false);
             await this.sanctions.appliedSanction('kick', message, spamMatches, options);
@@ -399,7 +399,7 @@ class AntiSpamClient extends EventEmitter {
         }
 
         /** MUTE SANCTION */
-        const userCanBeMuted = options.muteEnabled && !sanctioned;
+        const userCanBeMuted = options.enable.mute && !sanctioned;
         if (userCanBeMuted && (spamMatches.length >= options.thresholds.mute)) {
             this.emit('spamThresholdMute', message.member, false);
             await this.sanctions.appliedSanction('mute', message, spamMatches, options);
@@ -413,7 +413,7 @@ class AntiSpamClient extends EventEmitter {
         }
 
         /** WARN SANCTION */
-        const userCanBeWarned = options.warnEnabled && !cache.warnedUsers.includes(message.author.id) && !sanctioned;
+        const userCanBeWarned = options.enable.warn && !cache.warnedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeWarned && (spamMatches.length >= options.thresholds.warn)) {
             this.emit('spamThresholdWarn', message.member, false);
             await this.sanctions.appliedSanction('warn', message, spamMatches, options);

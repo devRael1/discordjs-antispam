@@ -114,7 +114,15 @@ declare module 'discordjs-antispam' {
         members?: Snowflake[] | ((user: User) => boolean);
         roles?: Snowflake[] | ((role: Role) => boolean);
         channels?: Snowflake[] | ((channel: TextChannel) => boolean);
+        permissions?: PermissionResolvable[];
         bots?: boolean;
+    }
+
+    type EnableObjecty = {
+        warn?: boolean;
+        mute?: boolean;
+        kick?: boolean;
+        ban?: boolean;
     }
 
     type AntiSpamOptions = {
@@ -129,12 +137,8 @@ declare module 'discordjs-antispam' {
         errorMessage?: ErrorMessageObject;
         unMuteTime?: number;
         deleteMessagesAfterBanForPastDays?: number;
-        ignoredPermissions?: PermissionResolvable[];
         ignore?: IngoreObject;
-        warnEnabled?: boolean;
-        kickEnabled?: boolean;
-        banEnabled?: boolean;
-        muteEnabled?: boolean;
+        enable?: EnableObjecty;
         modLogsChannelName?: string;
         modLogsEnabled?: boolean;
         removeMessages?: boolean;
