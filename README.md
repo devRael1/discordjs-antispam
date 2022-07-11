@@ -224,13 +224,10 @@ client.on("messageCreate", async (message) => {
 * Add and Test: `Mass Mentions System`
 * Add and Test: `Emojis excessifs System`
 * ✅ Bypass Bots for All Systems *(Can be enabled or Disabled)*
-* Take screenshots of the module and add them to the README.md
 * ✅ Complete ⚙️ AntiSpam Client Options
 * ✅ Find a method to clear cache for a guild when the cache is too big.
 * Create docs for the module
 
-## 📷 Screenshots
-// TODO
 
 ## 🐛 Bug Reports
 
