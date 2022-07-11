@@ -16,19 +16,19 @@ const SanctionsManager = require('./lib/sanctions');
 /**
  * @callback IgnoreMemberFunction
  * @param {GuildMember} member The member to check
- * @returns {boolean} Whether the member should be ignored
+ * @returns {Promise<boolean>} Whether the member should be ignored
  */
 
 /**
  * @callback IgnoreRoleFunction
  * @param {Collection<Snowflake, Role>} role The role to check
- * @returns {boolean} Whether the user should be ignored
+ * @returns {Promise<boolean>} Whether the user should be ignored
  */
 
 /**
  * @callback IgnoreChannelFunction
  * @param {TextChannel} channel The channel to check
- * @returns {boolean} Whether the channel should be ignored
+ * @returns {Promise<boolean>} Whether the channel should be ignored
  */
 
 /**
@@ -307,15 +307,15 @@ class AntiSpamClient extends EventEmitter {
             || (message.guild.ownerId === message.author.id && !options.debug)
             || (options.ignore.bots && message.author.bot)) return false;
 
-        const isMemberIgnored = typeof options.ignore.members === 'function' ? options.ignore.members(message.member) : options.ignore.members.includes(message.author.id)
+        const isMemberIgnored = typeof options.ignore.members === 'function' ? await options.ignore.members(message.member) : options.ignore.members.includes(message.author.id)
         if (isMemberIgnored) return false;
 
-        const isChannelIgnored = typeof options.ignore.channels === 'function' ? options.ignore.channels(message.channel) : options.ignore.channels.includes(message.channel.id)
+        const isChannelIgnored = typeof options.ignore.channels === 'function' ? await options.ignore.channels(message.channel) : options.ignore.channels.includes(message.channel.id)
         if (isChannelIgnored) return false;
 
         const member = message.member || await message.guild.members.cache.get(message.author.id);
 
-        const memberHasIgnoredRoles = typeof options.ignore.roles === 'function' ? options.ignore.roles(member.roles.cache) : options.ignore.roles.some((r) => member.roles.cache.has(r))
+        const memberHasIgnoredRoles = typeof options.ignore.roles === 'function' ? await options.ignore.roles(member.roles.cache) : options.ignore.roles.some((r) => member.roles.cache.has(r))
         if (memberHasIgnoredRoles) return false;
 
         return !options.ignore.permissions.some((permission) => member.permissions.has(permission));
