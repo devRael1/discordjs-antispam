@@ -75,16 +75,22 @@ const SanctionsManager = require('./lib/sanctions');
  */
 
 /**
+ * Object of Thresholds
+ * @typedef ThresholdsObject
+ * @property {number} [warn=4] Amount of messages sent in a row that will cause a warning.
+ * @property {number} [mute=6] Amount of messages sent in a row that will cause a mute.
+ * @property {number} [kick=8] Amount of messages sent in a row that will cause a kick.
+ * @property {number} [ban=10] Amount of messages sent in a row that will cause a ban.
+ */
+
+/**
  * Options for the AntiSpam client
  * @typedef AntiSpamClientOptions
  *
  * @property {boolean} [customGuildOptions=false] Whether to use custom guild options
  * @property {boolean} [wordsFilter=false] Whether to use words filter system
- * @property {Object} [linksFilter] Whether to use links filter system
- * @property {number} [warnThreshold=3] Amount of messages sent in a row that will cause a warning.
- * @property {number} [muteThreshold=4] Amount of messages sent in a row that will cause a mute.
- * @property {number} [kickThreshold=5] Amount of messages sent in a row that will cause a kick.
- * @property {number} [banThreshold=7] Amount of messages sent in a row that will cause a ban.
+ * @property {LinksFilterObject} [linksFilter] Whether to use links filter system
+ * @property {ThresholdsObject} [thresholds] Thresholds for the AntiSpam client
  *
  * @property {number} [maxInterval=2000] Amount of time (ms) in which messages are considered spam.
  * @property {number} [maxDuplicatesInterval=2000] Amount of time (ms) in which duplicate messages are considered spam.
@@ -174,9 +180,7 @@ class AntiSpamClient extends EventEmitter {
         this.options = options.customGuildOptions ? undefined : {
             /** Use customGuildOptions instead of AntiSpam Client Instance Options defaults value */
             customGuildOptions: options.customGuildOptions || false,
-
             wordsFilter: options.wordsFilter || false,
-
             /** Enable / Disable Links Filter System
              * @type {LinksFilterObject} Links Filter System Options
              */
@@ -185,12 +189,15 @@ class AntiSpamClient extends EventEmitter {
                 customLinksFilter: options.linksFilter.customLinksFilter || false,
                 discordInviteLinksFilter: options.linksFilter.discordInviteLinksFilter || false,
             },
-
-            warnThreshold: options.warnThreshold || 4,
-            muteThreshold: options.muteThreshold || 6,
-            kickThreshold: options.kickThreshold || 8,
-            banThreshold: options.banThreshold || 10,
-
+            /**
+             * @type {ThresholdsObject} Thresholds System Options
+             */
+            thresholds: {
+                warn: options.thresholds.warn || 4,
+                mute: options.thresholds.mute || 6,
+                kick: options.thresholds.kick || 8,
+                ban: options.thresholds.ban || 10,
+            },
             maxInterval: options.maxInterval || 2000,
             maxDuplicatesInterval: options.maxDuplicatesInterval || 3000,
 
@@ -349,7 +356,7 @@ class AntiSpamClient extends EventEmitter {
 
         /** BAN SANCTION */
         const userCanBeBanned = options.banEnabled && !cache.bannedUsers.includes(message.author.id) && !sanctioned;
-        if (userCanBeBanned && (spamMatches.length >= options.banThreshold)) {
+        if (userCanBeBanned && (spamMatches.length >= options.thresholds.ban)) {
             this.emit('spamThresholdBan', message.member, false);
             await this.sanctions.appliedSanction('ban', message, spamMatches, options);
             this.emit('banAdd', message.member);
@@ -363,7 +370,7 @@ class AntiSpamClient extends EventEmitter {
 
         /** KICK SANCTION */
         const userCanBeKicked = options.kickEnabled && !cache.kickedUsers.includes(message.author.id) && !sanctioned;
-        if (userCanBeKicked && (spamMatches.length >= options.kickThreshold)) {
+        if (userCanBeKicked && (spamMatches.length >= options.thresholds.kick)) {
             this.emit('spamThresholdKick', message.member, false);
             await this.sanctions.appliedSanction('kick', message, spamMatches, options);
             this.emit('kickAdd', message.member);
@@ -377,7 +384,7 @@ class AntiSpamClient extends EventEmitter {
 
         /** MUTE SANCTION */
         const userCanBeMuted = options.muteEnabled && !sanctioned;
-        if (userCanBeMuted && (spamMatches.length >= options.muteThreshold)) {
+        if (userCanBeMuted && (spamMatches.length >= options.thresholds.mute)) {
             this.emit('spamThresholdMute', message.member, false);
             await this.sanctions.appliedSanction('mute', message, spamMatches, options);
             this.emit('muteAdd', message.member);
@@ -391,7 +398,7 @@ class AntiSpamClient extends EventEmitter {
 
         /** WARN SANCTION */
         const userCanBeWarned = options.warnEnabled && !cache.warnedUsers.includes(message.author.id) && !sanctioned;
-        if (userCanBeWarned && (spamMatches.length >= options.warnThreshold)) {
+        if (userCanBeWarned && (spamMatches.length >= options.thresholds.warn)) {
             this.emit('spamThresholdWarn', message.member, false);
             await this.sanctions.appliedSanction('warn', message, spamMatches, options);
             this.emit('warnAdd', message.member);

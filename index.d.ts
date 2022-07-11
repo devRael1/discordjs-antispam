@@ -83,14 +83,18 @@ declare module 'discordjs-antispam' {
         discordInviteLinksFilter?: boolean;
     }
 
+    type ThresholdsObject = {
+        warn?: number;
+        mute?: number;
+        kick?: number;
+        ban?: number;
+    }
+
     type AntiSpamOptions = {
         customGuildOptions?: boolean;
         wordsFilter?: boolean;
         linksFilter?: LinksFilterObject;
-        warnThreshold?: number;
-        banThreshold?: number;
-        kickThreshold?: number;
-        muteThreshold?: number;
+        thresholds?: ThresholdsObject;
         maxInterval?: number;
         maxDuplicatesInterval?: number;
         warnMessage?: string | MessageEmbed;
