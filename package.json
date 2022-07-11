@@ -1,6 +1,6 @@
 {
   "name": "@devraelfreeze/discordjs-antispam",
-  "version": "1.6.5",
+  "version": "1.6.8",
   "description": "Complex Antispam module for Discord JS",
   "main": "index.js",
   "scripts": {
@@ -14,13 +14,20 @@
     "antispam",
     "moderation",
     "bot",
+    "discord bot",
+    "discord.js bot",
     "plugin",
     "module",
     "auto-moderation",
     "auto-mod",
     "discordjs v13",
     "multi-guilds",
-    "configurable"
+    "configurable",
+    "words-filter",
+    "link-filter",
+    "discord-invite-filter",
+    "discord-invite",
+    "discord-invites"
   ],
   "repository": {
     "type": "git",
