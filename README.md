@@ -12,7 +12,7 @@
 # ❓ discordjs-antispam
 
 
-A simple module with quick setup and different options to implement anti-spam features in your bot.
+A complex module with quick setup and different options to implement anti-spam and auto-moderation features in your bot.
 <br>**_This version of the package will only support discord.js v13_**
 <br>
 ### ⚠️ This package support multi-guilds !
