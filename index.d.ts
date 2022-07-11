@@ -31,13 +31,13 @@ declare module 'discordjs-antispam' {
         public message(message: Message, options: AntiSpamOptions): Promise<boolean>;
 
         /** Functions for Words Filter System */
-        public message_wordfilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
-        public message_badWordsUsages(message: Message): Promise<string[]>;
+        public messageWordsFilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
+        public messageBadWordsUsages(message: Message): Promise<string[]>;
         public addWords(words: string|string[], guild_id: string): Promise<boolean>;
         public removeWords(words: string|string[], guild_id: string): Promise<boolean>;
 
         /** Functions for Links Filter System */
-        public message_linkfilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
+        public messageLinksFilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
         public addLinks(links: string|string[], guild_id: string): Promise<boolean>;
         public removeLinks(links: string|string[], guild_id: string): Promise<boolean>;
 

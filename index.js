@@ -413,7 +413,7 @@ class AntiSpamClient extends EventEmitter {
      * @param {AntiSpamClientOptions} _options - The guild options or Global Antispam Client Options
      * @returns {Promise<boolean|void>}
      */
-    async message_wordfilter(message, _options) {
+    async messageWordsFilter(message, _options) {
         const options = _options || this.options;
         if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
 
@@ -430,7 +430,7 @@ class AntiSpamClient extends EventEmitter {
      * @param {AntiSpamClientOptions} _options The guild options or Global Antispam Client Options
      * @returns {Promise<boolean>}
      */
-    async message_linkfilter(message, _options) {
+    async messageLinksFilter(message, _options) {
         const options = _options || this.options;
         if (!options) return this.sanctions.logsError('Discord AntiSpam (message#failed): No options found!', options);
 
@@ -452,7 +452,7 @@ class AntiSpamClient extends EventEmitter {
      * @param {Message} message Message to check
      * @returns {Promise<Array.string>}
      */
-    async message_badWordsUsages(message) {
+    async messageBadWordsUsages(message) {
         return this.anti_words.checkBadWordsUsages(message.cleanContent, message.guild.id);
     }
 
