@@ -179,7 +179,33 @@ client.login("VERY SECRET TOKEN HERE :)");
 ### Example: Use Words Filter System (Functions)
 ```js
 /** Declare & Use module with 'messageCreate' event */
+client.on("messageCreate", async (message) => {
+    const contain_words = await antiSpam.messageWordsFilter(message);
+    if (conatin_words) {
+        /** Message contain word(s) */
+    } else {
+        /** Message doesn't contain word(s) */
+    }
+    
+    /** Get array of bad words usages 
+     * return : ['bad word', 'bad word', 'bad word']
+     */
+    const getBadWords = await antiSpam.messageBadWordsUsages(message);
 
+    /**
+     * Add custom word to the list for a guild
+     * You can also use Array of words to add multiple words at once
+     * e.g: antiSpam.addWords(['bad word', 'good word', 'bad word 2', 'good word 2'], message.guild.id);
+     */
+    const addWord = await antiSpam.addWords('bad word', message.guild.id);
+    
+    /**
+     * Remove custom word from the list for a guild
+     * You can also use Array of words to remove multiple words at once
+     * e.g: antiSpam.removeWords(['bad word', 'good word', 'bad word 2', 'good word 2'], message.guild.id);
+     */
+    const removeWord = await antiSpam.removeWords('bad word', message.guild.id);
+});
 ````
 ---
 ### Example: Use Links / Discord Invite Filter System (Functions)
