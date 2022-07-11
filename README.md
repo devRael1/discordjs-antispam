@@ -196,6 +196,7 @@ client.on("messageCreate", async (message) => {
      * Add custom word to the list for a guild
      * You can also use Array of words to add multiple words at once
      * e.g: antiSpam.addWords(['bad word', 'good word', 'bad word 2', 'good word 2'], message.guild.id);
+     * return true if added or false if not added
      */
     const addWord = await antiSpam.addWords('bad word', message.guild.id);
     
@@ -203,6 +204,7 @@ client.on("messageCreate", async (message) => {
      * Remove custom word from the list for a guild
      * You can also use Array of words to remove multiple words at once
      * e.g: antiSpam.removeWords(['bad word', 'good word', 'bad word 2', 'good word 2'], message.guild.id);
+     * return true if removed or false if not removed.
      */
     const removeWord = await antiSpam.removeWords('bad word', message.guild.id);
 });
