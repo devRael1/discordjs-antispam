@@ -89,7 +89,7 @@ const SanctionsManager = require('./lib/sanctions');
  * Object of Message System
  * @typedef MessageObject
  * @property {string|MessageEmbed} [warn='{@user}, Please stop spamming.'] Message that will be sent in the channel when someone is warned.
- * @property {string|MessageEmbed} [mute='**{user_tag}** has been kicked for spamming.'] Message that will be sent in the channel when someone is muted.
+ * @property {string|MessageEmbed} [mute='@{user} has been muted for spamming.'] Message that will be sent in the channel when someone is muted.
  * @property {string|MessageEmbed} [kick='**{user_tag}** has been kicked for spamming.'] Message that will be sent in the channel when someone is kicked.
  * @property {string|MessageEmbed} [ban='**{user_tag}** has been banned for spamming.'] Message that will be sent in the channel when someone is banned.
  */
@@ -136,7 +136,7 @@ const SanctionsManager = require('./lib/sanctions');
  *
  * @property {MaxDuplicatesObject} [maxDuplicates] Amount of duplicate messages that trigger a warning / mute / kick / ban.
  *
- * @property {number} [unMuteTime='0'] Time in minutes to wait until unmuting a user.
+ * @property {number} [unMuteTime=10] Time in minutes to wait until unmuting a user.
  * @property {string|Snowflake} [modLogsChannel='mod-logs'] Name or ID of the channel in which moderation logs will be sent.
  * @property {boolean} [modLogsEnabled=false] Whether moderation logs are enabled.
  *

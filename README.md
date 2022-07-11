@@ -15,7 +15,7 @@
 A complex module with quick setup and different options to implement anti-spam and auto-moderation features in your bot.
 <br>**_This version of the package will only support discord.js v13_**
 <br>
-### ⚠️ This package support multi-guilds !
+#### ⚠️ This package support multi-guilds !
 
 ## 📥 Installation
 
@@ -25,11 +25,119 @@ npm i @devraelfreeze/discordjs-antispam
 ```
 
 ## ⚙️ AntiSpam Client Options
-// TODO
 
+| Options Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `customGuildOptions` | `false` | Whether to use custom guild options |
+| `wordsFilter` | `false` | Whether to use words filter system |
+| `maxInterval` | `2000` | Amount of time (ms) in which messages are considered spam. |
+| `maxDuplicatesInterval` | `2000` | Amount of time (ms) in which duplicate messages are considered spam. |
+| `unMuteTime` | `10` | Time in minutes to wait until unmuting a user. |
+| `modLogsEnabled` | `false` | Whether moderation logs are enabled. |
+| `modLogsChannel` | `CHANNEL_ID` | Name or ID of the channel in which moderation logs will be sent. |
+| `deleteMessagesAfterBanForPastDays` | `1` | When a user is banned, their messages sent in the last x days will be deleted. |
+| `verbose` | `false` | Extended logs from module (recommended). |
+| `debug` | `false` | Whether to run the module in debug mode. |
+| `removeMessages` | `true` | Whether to delete user messages after a sanction. |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `linksFilter` | `object` | Whether to use links filter system |
+| `linksFilter.globalLinksFilter` | `false` | Whether to filter global links (all links) |
+| `linksFilter.discordInviteLinksFilter` | `false` | Whether to filter discord invite links |
+| `linksFilter.customLinksFilter` | `false` | Whether to filter custom links per guild |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `thresholds` | `object` | Amount of messages sent in a row that will cause a warning / mute / kick / ban. |
+| `thresholds.warn` | `4` | Amount of messages sent in a row that will cause a warning. |
+| `thresholds.mute` | `6` | Amount of messages sent in a row that will cause a mute. |
+| `thresholds.kick` | `8` | Amount of messages sent in a row that will cause a kick. |
+| `thresholds.ban` | `10` | Amount of messages sent in a row that will cause a ban. |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `maxDuplicates` | `object` | Amount of duplicate messages that trigger a warning / mute / kick / ban. |
+| `maxDuplicates.warn` | `4` | Amount of duplicate messages sent in a row that will trigger a warning. |
+| `maxDuplicates.mute` | `6` | Amount of duplicate messages sent in a row that will trigger a mute. |
+| `maxDuplicates.kick` | `8` | Amount of duplicate messages sent in a row that will trigger a kick. |
+| `maxDuplicates.ban` | `10` | Amount of duplicate messages sent in a row that will trigger a ban |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `message` | `object` | Messages that will be sent when a sanction is applied. |
+| `message.warn` | `'{@user}, Please stop spamming.'` | Message that will be sent when someone is warned. |
+| `message.mute` | `'@{user} has been muted for spamming.'` | Message that will be sent when someone is muted. |
+| `message.kick` | `'**{user_tag}** has been kicked for spamming.'` | Message that will be sent when someone is kicked. |
+| `message.ban` | `'**{user_tag}** has been banned for spamming.'` | Message that will be sent when someone is banned. |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `errorMessage` | `object` | Whether the bot should send a message when it doesn't have some required permissions |
+| `errorMessage.enabled` | `true` | Enable / Disable the errorMessage system |
+| `errorMessage.mute` | `'Could not mute **{user_tag}** because of improper permissions.'` | Message that will be sent when the bot doesn't have enough permissions to mute the member |
+| `errorMessage.kick` | `'Could not kick **{user_tag}** because of improper permissions.'` | Message that will be sent when the bot doesn't have enough permissions to kick the member |
+| `errorMessage.ban` | `'Could not ban **{user_tag}** because of improper permissions.'` | Message that will be sent when the bot doesn't have enough permissions to ban the member |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `ignore` | `object` | Configuration of roles / members / channels / permissions to ignore |
+| `ignore.members` | `[]` | Array of member IDs (or Function) that are ignored. |
+| `ignore.roles` | `[]` | Array of role IDs or role names (or Function) that are ignored. Members with one of these roles will be ignored. |
+| `ignore.channels` | `[]` | Array of channel IDs or channel names (or Function) that are ignored. |
+| `ignore.permissions` | `[]` | Users with at least one of these permissions will be ignored. |
+| `ignore.bots` | `true` | Whether bots should be ignored. |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `enable` | `object` | Enable / Disable sanction system |
+| `enable.warn` | `true` | Whether to enable warnings. |
+| `enable.mute` | `true` | Whether to enable mutes. |
+| `enable.kick` | `true` | Whether to enable kicks. |
+| `enable.ban` | `true` | Whether to enable bans. |
 
 ## ⬇️ Examples
 
+### Example: Basic AntiSpam Client with Options
+```js
+/** See all options above */
+const AntiSpam = require("@devraelfreeze/discordjs-antispam");
+const antiSpam = new AntiSpam(client, {
+    customGuildOptions: true,
+    wordsFilter: true,
+    maxInterval: 2000,
+    maxDuplicatesInterval: 2000,
+    unMuteTime: 10,
+    deleteMessagesAfterBanForPastDays: 1,
+    verbose: false,
+    debug: false,
+    removeMessages: true,
+    linksFilter: {
+        globalLinksFilter: false,
+        discordInviteLinksFilter: false,
+        customLinksFilter: false
+    },
+    thresholds: {
+        warn: 4,
+        mute: 6,
+        kick: 8,
+        ban: 10
+    },
+    maxDuplicates: {
+        warn: 4,
+        mute: 6,
+        kick: 8,
+        ban: 10
+    },
+    message: {
+        warn: "{@user}, Please stop spamming.",
+        mute: "@{user} has been muted for spamming.",
+        kick: "**{user_tag}** has been kicked for spamming.",
+        ban: "**{user_tag}** has been banned for spamming."
+    }
+});
+```
+---
 ### Example: Declare & Use module
 ```js
 const Discord = require("discord.js");
@@ -70,15 +178,13 @@ client.login("VERY SECRET TOKEN HERE :)");
 ---
 ### Example: Use Words Filter System (Functions)
 ```js
-/** Declare & Use module with messageCreate event 
- [See above for many examples] */
+/** Declare & Use module with 'messageCreate' event */
 
 ````
 ---
 ### Example: Use Links / Discord Invite Filter System (Functions)
 ```js
-/** Declare & Use module with messageCreate event 
- [See above for many examples] */
+/** Declare & Use module with 'messageCreate' event */
 
 ````
 
@@ -90,9 +196,8 @@ client.login("VERY SECRET TOKEN HERE :)");
 * Add and Test: `Mass Mentions System`
 * Add and Test: `Emojis excessifs System`
 * ✅ Bypass Bots for All Systems *(Can be enabled or Disabled)*
-* Finish the Example for README.md
 * Take screenshots of the module and add them to the README.md
-* Complete ⚙️ AntiSpam Client Options
+* ✅ Complete ⚙️ AntiSpam Client Options
 * ✅ Find a method to clear cache for a guild when the cache is too big.
 * Create docs for the module
 
