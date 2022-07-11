@@ -166,11 +166,15 @@ const client = new Discord.Client({
 });
 const AntiSpam = require("@devraelfreeze/discordjs-antispam");
 const antiSpam = new AntiSpam(client, {customGuildOptions: true});
-client.on("ready", () => console.log(`Logged in as ${client.user.tag}.`));
-client.on("messageCreate", async (message) => {
+client.on("ready", async () => {
+    console.log(`Logged in as ${client.user.tag}.`)
     /** Custom guild options in Object */
+    const guildId = "123456789012345678";
     const guildOptions = {/** Options of AntiSpam */};
-    await antiSpam.message(message, guildOptions);
+    await antiSpam.setGuildOptions(guildId, guildOptions);
+});
+client.on("messageCreate", async (message) => {
+    await antiSpam.message(message);
 });
 /** Login the bot */
 client.login("VERY SECRET TOKEN HERE :)");
@@ -218,7 +222,7 @@ client.on("messageCreate", async (message) => {
 
 ## ⏳ TODO
 
-* Add support of multi-guilds (Use Collection Cache)
+* ✅ Add support of multi-guilds (Use Collection Cache)
 * ✅ Add and Test: `Words Filter System` (Can configure the words list to filter) 
 * Add and Test: `Discord Anti Links System`
 * Add and Test: `Anti Links System` (Can configure links to filter)
