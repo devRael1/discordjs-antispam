@@ -34,7 +34,7 @@ npm i @devraelfreeze/discordjs-antispam
 | `maxDuplicatesInterval` | `2000` | Amount of time (ms) in which duplicate messages are considered spam. |
 | `unMuteTime` | `10` | Time in minutes to wait until unmuting a user. |
 | `modLogsEnabled` | `false` | Whether moderation logs are enabled. |
-| `modLogsChannel` | `CHANNEL_ID` | Name or ID of the channel in which moderation logs will be sent. |
+| `modLogsChannel` | `CHANNEL_ID` | ID of the channel in which moderation logs will be sent. |
 | `deleteMessagesAfterBanForPastDays` | `1` | When a user is banned, their messages sent in the last x days will be deleted. |
 | `verbose` | `false` | Extended logs from module (recommended). |
 | `debug` | `false` | Whether to run the module in debug mode. |

@@ -88,7 +88,7 @@ interface AntiSpamOptions {
     deleteMessagesAfterBanForPastDays?: number;
     ignore?: IngoreObject;
     enable?: EnableObjecty;
-    modLogsChannelName?: string;
+    modLogsChannel?: string;
     modLogsEnabled?: boolean;
     removeMessages?: boolean;
     verbose?: boolean;
@@ -103,8 +103,8 @@ declare class AntiSpam extends EventEmitter {
     constructor(client: Client, options?: AntiSpamOptions);
 
     /** Functions Guilds Options Management */
-    public getGuildOptions(guildId: string): Promise<AntiSpamOptions>;
-    public setGuildOptions(guildId: string, options: AntiSpamOptions): Promise<AntiSpamOptions>;
+    public getGuildOptions(guildId: string): AntiSpamOptions;
+    public setGuildOptions(guildId: string, options: AntiSpamOptions): AntiSpamOptions;
 
     /** Function AntiSpam */
     public message(message: Message, options: AntiSpamOptions): Promise<boolean>;

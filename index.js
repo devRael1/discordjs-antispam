@@ -138,7 +138,7 @@ const LogsManager = require('./lib/logs');
  * @property {MaxDuplicatesObject} [maxDuplicates] Amount of duplicate messages that trigger a warning / mute / kick / ban.
  *
  * @property {number} [unMuteTime=10] Time in minutes to wait until unmuting a user.
- * @property {string|Snowflake} [modLogsChannel='mod-logs'] Name or ID of the channel in which moderation logs will be sent.
+ * @property {string|Snowflake} [modLogsChannel='mod-logs'] ID of the channel in which moderation logs will be sent.
  * @property {boolean} [modLogsEnabled=false] Whether moderation logs are enabled.
  *
  * @property {MessageObject} [message] Message that will be sent in the channel when someone is warned.
@@ -327,6 +327,7 @@ class AntiSpamClient extends EventEmitter {
     /**
      * Get guild Options for a guild
      * @param {string} guildID Guild ID
+     * @returns {AntiSpamClientOptions}
      */
     async getGuildOptions (guildID) {
         return this.guildOptions.get(guildID);
@@ -336,6 +337,7 @@ class AntiSpamClient extends EventEmitter {
      *
      * @param {string} guildID Guild ID
      * @param {AntiSpamClientOptions} options The options for the guild
+     * @returns {AntiSpamClientOptions}
      */
     async setGuildOptions (guildID, options) {
         this.guildOptions.set(guildID, options);
