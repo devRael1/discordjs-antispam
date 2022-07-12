@@ -228,8 +228,8 @@ class AntiSpamClient extends EventEmitter {
             modLogsEnabled: options.modLogsEnabled || false,
             message: {
                 warn: options.message?.warn !== undefined ? options.message?.warn instanceof MessageEmbed ? options.message.warn.toJSON() : options.message.warn : '{@user} has been warned for reason: **{reason}**',
-                kick: options.message?.kick !== undefined ? options.message?.kick instanceof MessageEmbed ? options.message.kick.toJSON() : options.message.kick : '**{user_tag}** has been kicked for reason: **{reason}**',
                 mute: options.message?.mute !== undefined ? options.message?.mute instanceof MessageEmbed ? options.message.mute.toJSON() : options.message.mute : '@{user} has been muted for reason: **{reason}**',
+                kick: options.message?.kick !== undefined ? options.message?.kick instanceof MessageEmbed ? options.message.kick.toJSON() : options.message.kick : '**{user_tag}** has been kicked for reason: **{reason}**',
                 ban: options.message?.ban !== undefined ? options.message?.ban instanceof MessageEmbed ? options.message.ban.toJSON() : options.message.ban : '**{user_tag}** has been banned for reason: **{reason}**',
             },
             errorMessage: {
@@ -305,6 +305,17 @@ class AntiSpamClient extends EventEmitter {
          * @type {SanctionsManager}
          */
         this.sanctions = new SanctionsManager(this);
+
+        /**
+         * Type of Sanctions to be used
+         * @type {{warn: string, kick: string, mute: string, ban: string}}
+         */
+        this.type_sanctions = {
+            warn: 'warn',
+            mute: 'mute',
+            kick: 'kick',
+            ban: 'ban',
+        }
     }
 
     /**
@@ -452,12 +463,12 @@ class AntiSpamClient extends EventEmitter {
         const userCanBeBanned = options.enable.ban && !cache.bannedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeBanned && (spamMatches.length >= options.thresholds.ban)) {
             this.emit('spamThresholdBan', message.member, false);
-            await this.sanctions.appliedSanction('ban', message, spamMatches, options);
+            await this.sanctions.appliedSanction(this.type_sanctions.ban, message, spamMatches, options);
             this.emit('banAdd', message.member);
             sanctioned = true;
         } else if (userCanBeBanned && (duplicateMatches.length >= options.maxDuplicates.ban)) {
             this.emit('spamThresholdBan', message.member, false);
-            await this.sanctions.appliedSanction('ban', message, [...duplicateMatches, ...spamOtherDuplicates], options);
+            await this.sanctions.appliedSanction(this.type_sanctions.ban, message, [...duplicateMatches, ...spamOtherDuplicates], options);
             this.emit('banAdd', message.member);
             sanctioned = true;
         }
@@ -467,12 +478,12 @@ class AntiSpamClient extends EventEmitter {
         const userCanBeKicked = options.enable.kick && !cache.kickedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeKicked && (spamMatches.length >= options.thresholds.kick)) {
             this.emit('spamThresholdKick', message.member, false);
-            await this.sanctions.appliedSanction('kick', message, spamMatches, options);
+            await this.sanctions.appliedSanction(this.type_sanctions.kick, message, spamMatches, options);
             this.emit('kickAdd', message.member);
             sanctioned = true;
         } else if (userCanBeKicked && (duplicateMatches.length >= options.maxDuplicates.kick)) {
             this.emit('spamThresholdKick', message.member, true);
-            await this.sanctions.appliedSanction('kick', message, [...duplicateMatches, ...spamOtherDuplicates], options);
+            await this.sanctions.appliedSanction(this.type_sanctions.kick, message, [...duplicateMatches, ...spamOtherDuplicates], options);
             this.emit('kickAdd', message.member);
             sanctioned = true;
         }
@@ -482,12 +493,12 @@ class AntiSpamClient extends EventEmitter {
         const userCanBeMuted = options.enable.mute && !sanctioned;
         if (userCanBeMuted && (spamMatches.length >= options.thresholds.mute)) {
             this.emit('spamThresholdMute', message.member, false);
-            await this.sanctions.appliedSanction('mute', message, spamMatches, options);
+            await this.sanctions.appliedSanction(this.type_sanctions.mute, message, spamMatches, options);
             this.emit('muteAdd', message.member);
             sanctioned = true;
         } else if (userCanBeMuted && (duplicateMatches.length >= options.maxDuplicates.mute)) {
             this.emit('spamThresholdMute', message.member, true);
-            await this.sanctions.appliedSanction('mute', message, [...duplicateMatches, ...spamOtherDuplicates], options);
+            await this.sanctions.appliedSanction(this.type_sanctions.mute, message, [...duplicateMatches, ...spamOtherDuplicates], options);
             this.emit('muteAdd', message.member);
             sanctioned = true;
         }
@@ -497,12 +508,12 @@ class AntiSpamClient extends EventEmitter {
         const userCanBeWarned = options.enable.warn && !cache.warnedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeWarned && (spamMatches.length >= options.thresholds.warn)) {
             this.emit('spamThresholdWarn', message.member, false);
-            await this.sanctions.appliedSanction('warn', message, spamMatches, options);
+            await this.sanctions.appliedSanction(this.type_sanctions.warn, message, spamMatches, options);
             this.emit('warnAdd', message.member);
             sanctioned = true;
         } else if (userCanBeWarned && (duplicateMatches.length >= options.maxDuplicates.warn)) {
             this.emit('spamThresholdWarn', message.member, true);
-            await this.sanctions.appliedSanction('warn', message, [...duplicateMatches, ...spamOtherDuplicates], options);
+            await this.sanctions.appliedSanction(this.type_sanctions.warn, message, [...duplicateMatches, ...spamOtherDuplicates], options);
             this.emit('warnAdd', message.member);
             sanctioned = true;
         }
@@ -607,6 +618,24 @@ class AntiSpamClient extends EventEmitter {
         const options = await this.getGuildOptions(guildId) || this.options;
         if (!links || !guildId) return this.logs.logsError('Discord AntiSpam (removeLinks#failed): No links or Guild ID given !', options);
         return this.anti_links.removeLinks(links, guildId);
+    }
+
+    /**
+     * Get all words for a guild
+     * @param {string} guildId Guild ID
+     * @returns {Promise<Array<string>>}
+     */
+    async listWords(guildId) {
+        return this.anti_words.listWords(guildId);
+    }
+
+    /**
+     * Get all links for a guild
+     * @param {string} guildId Guild ID
+     * @returns {Promise<*>}
+     */
+    async listLinks(guildId) {
+        return this.anti_links.listLinks(guildId);
     }
 
     /**

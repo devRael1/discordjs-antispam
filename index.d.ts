@@ -114,11 +114,13 @@ declare class AntiSpam extends EventEmitter {
     public messageBadWordsUsages(message: Message): Promise<string[]>;
     public addWords(words: string|string[], guild_id: string): Promise<boolean>;
     public removeWords(words: string|string[], guild_id: string): Promise<boolean>;
+    public listWords(guild_id: string): Promise<string[]>;
 
     /** Functions for Links Filter System */
     public messageLinksFilter(message: Message): Promise<boolean>;
     public addLinks(links: string|string[], guild_id: string): Promise<boolean>;
     public removeLinks(links: string|string[], guild_id: string): Promise<boolean>;
+    public listLinks(guild_id: string): Promise<string[]>;
 
     /** Functions utility */
     public resetGuild(guild_id: string): AntiSpamData;
