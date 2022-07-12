@@ -54,9 +54,9 @@ interface MessageObject {
 
 interface ErrorMessageObject {
     enabled?: boolean;
-    mute?: string;
-    kick?: string;
-    ban?: string;
+    mute?: string | MessageEmbed;
+    kick?: string | MessageEmbed;
+    ban?: string | MessageEmbed;
 }
 
 interface IngoreObject {
@@ -67,7 +67,7 @@ interface IngoreObject {
     bots?: boolean;
 }
 
-interface EnableObjecty {
+interface EnableObject {
     warn?: boolean;
     mute?: boolean;
     kick?: boolean;
@@ -87,8 +87,8 @@ interface AntiSpamOptions {
     unMuteTime?: number;
     deleteMessagesAfterBanForPastDays?: number;
     ignore?: IngoreObject;
-    enable?: EnableObjecty;
-    modLogsChannel?: string;
+    enable?: EnableObject;
+    modLogsChannel?: string|Snowflake;
     modLogsEnabled?: boolean;
     removeMessages?: boolean;
     verbose?: boolean;
@@ -103,8 +103,8 @@ declare class AntiSpam extends EventEmitter {
     constructor(client: Client, options?: AntiSpamOptions);
 
     /** Functions Guilds Options Management */
-    public getGuildOptions(guildId: string): AntiSpamOptions;
-    public setGuildOptions(guildId: string, options: AntiSpamOptions): AntiSpamOptions;
+    public getGuildOptions(guild_id: string|Snowflake): AntiSpamOptions;
+    public setGuildOptions(guild_id: string|Snowflake, options: AntiSpamOptions): AntiSpamOptions;
 
     /** Function AntiSpam */
     public message(message: Message, options: AntiSpamOptions): Promise<boolean>;
@@ -112,18 +112,18 @@ declare class AntiSpam extends EventEmitter {
     /** Functions for Words Filter System */
     public messageWordsFilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
     public messageBadWordsUsages(message: Message): Promise<string[]>;
-    public addWords(words: string|string[], guild_id: string): Promise<boolean>;
-    public removeWords(words: string|string[], guild_id: string): Promise<boolean>;
-    public listWords(guild_id: string): Promise<string[]>;
+    public addWords(words: string|string[], guild_id: string|Snowflake): Promise<boolean>;
+    public removeWords(words: string|string[], guild_id: string|Snowflake): Promise<boolean>;
+    public listWords(guild_id: string|Snowflake): Promise<string[]>;
 
     /** Functions for Links Filter System */
     public messageLinksFilter(message: Message): Promise<boolean>;
-    public addLinks(links: string|string[], guild_id: string): Promise<boolean>;
-    public removeLinks(links: string|string[], guild_id: string): Promise<boolean>;
-    public listLinks(guild_id: string): Promise<string[]>;
+    public addLinks(links: string|string[], guild_id: string|Snowflake): Promise<boolean>;
+    public removeLinks(links: string|string[], guild_id: string|Snowflake): Promise<boolean>;
+    public listLinks(guild_id: string|Snowflake): Promise<string[]>;
 
     /** Functions utility */
-    public resetGuild(guild_id: string): AntiSpamData;
+    public resetGuild(guild_id: string|Snowflake): AntiSpamData;
     public resetAllCache(): Promise<Collection<string, AntiSpamData>>;
     public userLeave(member: GuildMember): void;
 
