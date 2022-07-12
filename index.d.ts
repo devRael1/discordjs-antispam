@@ -116,7 +116,7 @@ declare class AntiSpam extends EventEmitter {
     public removeWords(words: string|string[], guild_id: string): Promise<boolean>;
 
     /** Functions for Links Filter System */
-    public messageLinksFilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
+    public messageLinksFilter(message: Message): Promise<boolean>;
     public addLinks(links: string|string[], guild_id: string): Promise<boolean>;
     public removeLinks(links: string|string[], guild_id: string): Promise<boolean>;
 

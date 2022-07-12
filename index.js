@@ -543,9 +543,9 @@ class AntiSpamClient extends EventEmitter {
 
         let contain_links = false;
         /** Global filter override */
-        if (options.globalLinksFilter) return this.anti_links.hasGlobalLink(message);
-        if (options.discordInviteLinksFilter) contain_links = await this.anti_links.hasDiscordInviteLink(message);
-        if (options.customLinksFilter) contain_links = await this.anti_links.hasCustomLinks(message, message.guild.id);
+        if (options.linksFilter.globalLinksFilter) return this.anti_links.hasGlobalLink(message);
+        if (options.linksFilter.discordInviteLinksFilter) contain_links = await this.anti_links.hasDiscordInviteLink(message);
+        if (options.linksFilter.customLinksFilter) contain_links = await this.anti_links.hasCustomLinks(message, message.guild.id);
         return contain_links;
     }
 
