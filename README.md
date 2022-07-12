@@ -66,10 +66,10 @@ npm i @devraelfreeze/discordjs-antispam
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
 | `message` | `object` | Messages that will be sent when a sanction is applied. |
-| `message.warn` | `'{@user}, Please stop spamming.'` | Message that will be sent when someone is warned. |
-| `message.mute` | `'@{user} has been muted for spamming.'` | Message that will be sent when someone is muted. |
-| `message.kick` | `'**{user_tag}** has been kicked for spamming.'` | Message that will be sent when someone is kicked. |
-| `message.ban` | `'**{user_tag}** has been banned for spamming.'` | Message that will be sent when someone is banned. |
+| `message.warn` | `'{@user} has been warned for reason: **{reason}**'` | Message that will be sent when someone is warned. |
+| `message.mute` | `'@{user} has been muted for reason: **{reason}**'` | Message that will be sent when someone is muted. |
+| `message.kick` | `'**{user_tag}** has been kicked for reason: **{reason}**'` | Message that will be sent when someone is kicked. |
+| `message.ban` | `'**{user_tag}** has been banned for reason: **{reason}**'` | Message that will be sent when someone is banned. |
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
@@ -128,12 +128,6 @@ const antiSpam = new AntiSpam(client, {
         mute: 6,
         kick: 8,
         ban: 10
-    },
-    message: {
-        warn: "{@user}, Please stop spamming.",
-        mute: "@{user} has been muted for spamming.",
-        kick: "**{user_tag}** has been kicked for spamming.",
-        ban: "**{user_tag}** has been banned for spamming."
     }
 });
 ```

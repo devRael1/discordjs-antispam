@@ -89,10 +89,10 @@ const LogsManager = require('./lib/logs');
 /**
  * Object of Message System
  * @typedef MessageObject
- * @property {string|MessageEmbed} [warn='{@user}, Please stop spamming.'] Message that will be sent in the channel when someone is warned.
- * @property {string|MessageEmbed} [mute='@{user} has been muted for spamming.'] Message that will be sent in the channel when someone is muted.
- * @property {string|MessageEmbed} [kick='**{user_tag}** has been kicked for spamming.'] Message that will be sent in the channel when someone is kicked.
- * @property {string|MessageEmbed} [ban='**{user_tag}** has been banned for spamming.'] Message that will be sent in the channel when someone is banned.
+ * @property {string|MessageEmbed} [warn='{@user} has been warned for reason: **{reason}**'] Message that will be sent in the channel when someone is warned.
+ * @property {string|MessageEmbed} [mute='@{user} has been muted for reason: **{reason}**'] Message that will be sent in the channel when someone is muted.
+ * @property {string|MessageEmbed} [kick='**{user_tag}** has been kicked for reason: **{reason}**'] Message that will be sent in the channel when someone is kicked.
+ * @property {string|MessageEmbed} [ban='**{user_tag}** has been banned for reason: **{reason}**'] Message that will be sent in the channel when someone is banned.
  */
 
 /**
@@ -228,10 +228,10 @@ class AntiSpamClient extends EventEmitter {
             modLogsChannel: options.modLogsChannel || 'CHANNEL_ID',
             modLogsEnabled: options.modLogsEnabled || false,
             message: {
-                warn: options.message?.warn || '{@user}, Please stop spamming.',
-                kick: options.message?.kick || '**{user_tag}** has been kicked for spamming.',
-                mute: options.message?.mute || '**{user_tag}** has been muted for spamming.',
-                ban: options.message?.ban || '**{user_tag}** has been banned for spamming.',
+                warn: options.message?.warn instanceof MessageEmbed ? options.message.warn.toJSON() : options.message.warn || '{@user} has been warned for reason: **{reason}**',
+                kick: options.message?.kick instanceof MessageEmbed ? options.message.kick.toJSON() : options.message.kick || '**{user_tag}** has been kicked for reason: **{reason}**',
+                mute: options.message?.mute instanceof MessageEmbed ? options.message.mute.toJSON() : options.message.mute || '@{user} has been muted for reason: **{reason}**',
+                ban: options.message?.ban instanceof MessageEmbed ? options.message.ban.toJSON() : options.message.ban || '**{user_tag}** has been banned for reason: **{reason}**',
             },
             errorMessage: {
                 enabled: options.errorMessage?.enabled !== undefined ? options.errorMessage.enabled : true,
@@ -310,7 +310,8 @@ class AntiSpamClient extends EventEmitter {
 
     /**
      * Get cache for a guild
-     * @param {Snowflake} guildID Guild ID
+     * @param {string} guildID Guild ID
+     * @returns {AntiSpamCache}
      */
     async getCache (guildID) {
         if (!this.cache.has(guildID)) {
