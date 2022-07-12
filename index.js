@@ -99,9 +99,9 @@ const LogsManager = require('./lib/logs');
  * Object of Error Message
  * @typedef ErrorMessageObject
  * @property {boolean} [enabled=true] Whether the bot should send a message in the channel when it doesn't have some required permissions, like it can't kick members.
- * @property {string} [mute='Could not mute **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to mute the member (to timeout member).
- * @property {string} [kick='Could not kick **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to kick the member.
- * @property {string} [ban='Could not ban **{user_tag}** because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to ban the member.
+ * @property {string|MessageEmbed} [mute='Could not mute @{user} because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to mute the member (to timeout member).
+ * @property {string|MessageEmbed} [kick='Could not kick @{user} because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to kick the member.
+ * @property {string|MessageEmbed} [ban='Could not ban @{user} because of improper permissions.'] Message that will be sent in the channel when the bot doesn't have enough permissions to ban the member.
  */
 
 /**
@@ -197,12 +197,11 @@ class AntiSpamClient extends EventEmitter {
         this.client = client;
 
         /**
-         * Default value of the options
+         * Default values of the options for AntiSpam Client
          * @type {AntiSpamClientOptions}
          * @private
          */
         this._defaultOptions = {
-            /** Use customGuildOptions instead of AntiSpam Client Instance Options defaults value */
             customGuildOptions: options.customGuildOptions || false,
             wordsFilter: options.wordsFilter || false,
             linksFilter: {
@@ -235,9 +234,9 @@ class AntiSpamClient extends EventEmitter {
             },
             errorMessage: {
                 enabled: options.errorMessage?.enabled !== undefined ? options.errorMessage.enabled : true,
-                mute: options.errorMessage?.mute || 'Could not mute **{user_tag}** because of improper permissions.',
-                kick: options.errorMessage?.kick || 'Could not kick **{user_tag}** because of improper permissions.',
-                ban: options.errorMessage?.ban || 'Could not ban **{user_tag}** because of improper permissions.',
+                mute: options.errorMessage?.mute !== undefined ? options.errorMessage?.mute instanceof MessageEmbed ? options.errorMessage?.mute.toJSON() : options.errorMessage.mute : 'Could not mute @{user} because of improper permissions.',
+                kick: options.errorMessage?.kick !== undefined ? options.errorMessage?.kick instanceof MessageEmbed ? options.errorMessage?.kick.toJSON() : options.errorMessage.kick : 'Could not kick @{user} because of improper permissions.',
+                ban: options.errorMessage?.ban !== undefined ? options.errorMessage?.ban instanceof MessageEmbed ? options.errorMessage?.ban.toJSON() : options.errorMessage.ban : 'Could not ban @{user} because of improper permissions.',
             },
             ignore: {
                 members: options.ignore?.members || [],
@@ -518,7 +517,7 @@ class AntiSpamClient extends EventEmitter {
      */
     async messageWordsFilter(message) {
         const options = await this.getGuildOptions(message.guild.id) || this.options;
-        if (!options) return this.logs.logsError('Discord AntiSpam (message#failed): No options found!', options);
+        if (!options) return this.logs.logsError('Discord AntiSpam (messageWordsFilter#failed): No options found!', options);
 
         const can = await this.canRun(message, options);
         if (!can) return false;
@@ -534,7 +533,7 @@ class AntiSpamClient extends EventEmitter {
      */
     async messageLinksFilter(message) {
         const options = await this.getGuildOptions(message.guild.id) || this.options;
-        if (!options) return this.logs.logsError('Discord AntiSpam (message#failed): No options found!', options);
+        if (!options) return this.logs.logsError('Discord AntiSpam (messageLinksFilter#failed): No options found!', options);
 
         if (!options.linksFilter.globalLinksFilter && !options.linksFilter.discordInviteLinksFilter && !options.linksFilter.customLinksFilter) return false;
 

@@ -75,9 +75,9 @@ npm i @devraelfreeze/discordjs-antispam
 | :--- | :---: | :--- |
 | `errorMessage` | `object` | Whether the bot should send a message when it doesn't have some required permissions |
 | `errorMessage.enabled` | `true` | Enable / Disable the errorMessage system |
-| `errorMessage.mute` | `'Could not mute **{user_tag}** because of improper permissions.'` | Message that will be sent when the bot doesn't have enough permissions to mute the member |
-| `errorMessage.kick` | `'Could not kick **{user_tag}** because of improper permissions.'` | Message that will be sent when the bot doesn't have enough permissions to kick the member |
-| `errorMessage.ban` | `'Could not ban **{user_tag}** because of improper permissions.'` | Message that will be sent when the bot doesn't have enough permissions to ban the member |
+| `errorMessage.mute` | `'Could not mute @{user} because of improper permissions.'` | Message that will be sent when the bot doesn't have enough permissions to mute the member |
+| `errorMessage.kick` | `'Could not kick @{user} because of improper permissions.'` | Message that will be sent when the bot doesn't have enough permissions to kick the member |
+| `errorMessage.ban` | `'Could not ban @{user} because of improper permissions.'` | Message that will be sent when the bot doesn't have enough permissions to ban the member |
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
