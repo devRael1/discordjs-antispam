@@ -136,14 +136,16 @@ declare class AntiSpam extends EventEmitter {
         event: 'spamThresholdBan' | 'spamThresholdKick' | 'spamThresholdWarn' | 'spamThresholdMute',
         listener: (member: GuildMember, duplicateMessages: boolean) => any
     ): this;
-    public on(
-        event: 'error',
-        listener: (
-            message: Message,
-            error: DiscordAPIError,
-            type: 'ban' | 'kick' | 'mute'
-        ) => any
-    ): this;
+
+    // TODO: Add support of error event with errors message system
+    // public on(
+    //     event: 'error',
+    //     listener: (
+    //         message: Message,
+    //         error: DiscordAPIError,
+    //         type: 'ban' | 'kick' | 'mute'
+    //     ) => any
+    // ): this;
 }
 
 export = AntiSpam;

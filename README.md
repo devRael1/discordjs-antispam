@@ -185,46 +185,79 @@ client.on("messageCreate", async (message) => {
         /** Message doesn't contain word(s) */
     }
     
-    /** Get array of bad words usages 
-     * return : ['bad word', 'bad word', 'bad word']
+    /** Get array of bad words usages in message
+     * return : getBadWords = ['bad word', 'bad word', 'bad word'];
      */
     const getBadWords = await antiSpam.messageBadWordsUsages(message);
-
     /**
-     * Add custom word to the list for a guild
-     * You can also use Array of words to add multiple words at once
-     * e.g: antiSpam.addWords(['bad word', 'good word', 'bad word 2', 'good word 2'], message.guild.id);
-     * return true if added or false if not added
+     * Add custom word to the list for a guild. You can also use Array of words
+     * @param {string|Array<string>} word(s) - Words to add
+     * @param {string} guild_id - ID of the guild
+     * @returns {Promise<boolean>} true if added or false if not added
      */
     const addWord = await antiSpam.addWords('bad word', message.guild.id);
-    
     /**
-     * Remove custom word from the list for a guild
-     * You can also use Array of words to remove multiple words at once
-     * e.g: antiSpam.removeWords(['bad word', 'good word', 'bad word 2', 'good word 2'], message.guild.id);
-     * return true if removed or false if not removed.
+     * Remove custom word from the list for a guild. You can also use Array of words
+     * @param {string|Array<string>} word(s) - Words to remove
+     * @param {string} guild_id - ID of the guild
+     * @returns {Promise<boolean>} true if removed or false if not removed.
      */
     const removeWord = await antiSpam.removeWords('bad word', message.guild.id);
+    /**
+     * Get words list for a guild.
+     * @param {string} guild_id - ID of the guild
+     * @returns {Promise<Array<string>>} Array of words
+     */
+    const wordsList = await antiSpam.listWords(message.guild.id);
 });
 ````
 ---
 ### Example: Use Links / Discord Invite Filter System (Functions)
 ```js
 /** Declare & Use module with 'messageCreate' event */
+client.on("messageCreate", async (message) => {
+    const contain_words = await antiSpam.messageLinksFilter(message);
+    if (conatin_words) {
+        /** Message contain link(s) */
+    } else {
+        /** Message doesn't contain link(s) */
+    }
 
+    /**
+     * Add link / links for a guild
+     * @param {string|Array<string>} links - Links to add
+     * @param {string} guild_id - ID of the guild
+     * @returns {Promise<boolean>} true if added or false if not added
+     */
+    const addLink = await antiSpam.addLinks('https://discord.gg/123456789', message.guild.id);
+    /**
+     * Remove link / links for a guild
+     * @param {string|Array<string>} links - Links to remove
+     * @param {string} guild_id - ID of the guild
+     * @returns {Promise<boolean>} true if removed or false if not removed.
+     */
+    const removeLink = await antiSpam.removeLinks('https://discord.gg/123456789', message.guild.id);
+    /**
+     * Get links list for a guild.
+     * @param {string} guild_id - ID of the guild
+     * @returns {Promise<Array<string>>} Array of links
+     */
+    const linksList = await antiSpam.listLinks(message.guild.id);
+});
 ````
 
 ## ⏳ TODO
 
 * ✅ Add support of multi-guilds (Use Collection Cache)
 * ✅ Add and Test: `Words Filter System` (Can configure the words list to filter) 
-* Add and Test: `Discord Anti Links System`
-* Add and Test: `Anti Links System` (Can configure links to filter)
+* ✅ Add and Test: `Anti Discord Invites Links System`
+* ✅ Add and Test: `Anti Links System` (Can configure links to filter)
 * Add and Test: `Mass Mentions System`
 * Add and Test: `Emojis excessifs System`
 * ✅ Bypass Bots for All Systems *(Can be enabled or Disabled)*
 * ✅ Complete ⚙️ AntiSpam Client Options
 * ✅ Find a method to clear cache for a guild when the cache is too big.
+* Add support of error event with errors messages system
 * Create docs for the module
 
 
