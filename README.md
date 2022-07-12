@@ -30,8 +30,8 @@ npm i @devraelfreeze/discordjs-antispam
 | :--- | :---: | :--- |
 | `customGuildOptions` | `false` | Whether to use custom guild options |
 | `wordsFilter` | `false` | Whether to use words filter system |
-| `maxInterval` | `2000` | Amount of time (ms) in which messages are considered spam. |
-| `maxDuplicatesInterval` | `2000` | Amount of time (ms) in which duplicate messages are considered spam. |
+| `maxInterval` | `3000` | Amount of time (ms) in which messages are considered spam. |
+| `maxDuplicatesInterval` | `3000` | Amount of time (ms) in which duplicate messages are considered spam. |
 | `unMuteTime` | `10` | Time in minutes to wait until unmuting a user. |
 | `modLogsEnabled` | `false` | Whether moderation logs are enabled. |
 | `modLogsChannel` | `CHANNEL_ID` | ID of the channel in which moderation logs will be sent. |
@@ -51,17 +51,17 @@ npm i @devraelfreeze/discordjs-antispam
 | :--- | :---: | :--- |
 | `thresholds` | `object` | Amount of messages sent in a row that will cause a warning / mute / kick / ban. |
 | `thresholds.warn` | `4` | Amount of messages sent in a row that will cause a warning. |
-| `thresholds.mute` | `6` | Amount of messages sent in a row that will cause a mute. |
-| `thresholds.kick` | `8` | Amount of messages sent in a row that will cause a kick. |
-| `thresholds.ban` | `10` | Amount of messages sent in a row that will cause a ban. |
+| `thresholds.mute` | `5` | Amount of messages sent in a row that will cause a mute. |
+| `thresholds.kick` | `6` | Amount of messages sent in a row that will cause a kick. |
+| `thresholds.ban` | `8` | Amount of messages sent in a row that will cause a ban. |
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
 | `maxDuplicates` | `object` | Amount of duplicate messages that trigger a warning / mute / kick / ban. |
 | `maxDuplicates.warn` | `4` | Amount of duplicate messages sent in a row that will trigger a warning. |
-| `maxDuplicates.mute` | `6` | Amount of duplicate messages sent in a row that will trigger a mute. |
-| `maxDuplicates.kick` | `8` | Amount of duplicate messages sent in a row that will trigger a kick. |
-| `maxDuplicates.ban` | `10` | Amount of duplicate messages sent in a row that will trigger a ban |
+| `maxDuplicates.mute` | `5` | Amount of duplicate messages sent in a row that will trigger a mute. |
+| `maxDuplicates.kick` | `6` | Amount of duplicate messages sent in a row that will trigger a kick. |
+| `maxDuplicates.ban` | `8` | Amount of duplicate messages sent in a row that will trigger a ban |
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |

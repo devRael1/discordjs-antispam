@@ -72,18 +72,18 @@ const LogsManager = require('./lib/logs');
  * Object of Thresholds System
  * @typedef ThresholdsObject
  * @property {number} [warn=4] Amount of messages sent in a row that will cause a warning.
- * @property {number} [mute=6] Amount of messages sent in a row that will cause a mute.
- * @property {number} [kick=8] Amount of messages sent in a row that will cause a kick.
- * @property {number} [ban=10] Amount of messages sent in a row that will cause a ban.
+ * @property {number} [mute=5] Amount of messages sent in a row that will cause a mute.
+ * @property {number} [kick=6] Amount of messages sent in a row that will cause a kick.
+ * @property {number} [ban=8] Amount of messages sent in a row that will cause a ban.
  */
 
 /**
  * Object of MaxDuplicates System
  * @typedef MaxDuplicatesObject
  * @property {number} [warn=4] Amount of duplicate messages that trigger a warning.
- * @property {number} [mute=6] Amount of duplicate messages that trigger a mute.
- * @property {number} [kick=8] Amount of duplicate messages that trigger a kick.
- * @property {number} [ban=10] Amount of duplicate messages that trigger a ban.
+ * @property {number} [mute=5] Amount of duplicate messages that trigger a mute.
+ * @property {number} [kick=6] Amount of duplicate messages that trigger a kick.
+ * @property {number} [ban=8} Amount of duplicate messages that trigger a ban.
  */
 
 /**
@@ -132,8 +132,8 @@ const LogsManager = require('./lib/logs');
  * @property {LinksFilterObject} [linksFilter] Whether to use links filter system
  * @property {ThresholdsObject} [thresholds] Amount of messages sent in a row that will cause a warning / mute / kick / ban.
  *
- * @property {number} [maxInterval=2000] Amount of time (ms) in which messages are considered spam.
- * @property {number} [maxDuplicatesInterval=2000] Amount of time (ms) in which duplicate messages are considered spam.
+ * @property {number} [maxInterval=3000] Amount of time (ms) in which messages are considered spam.
+ * @property {number} [maxDuplicatesInterval=3000] Amount of time (ms) in which duplicate messages are considered spam.
  *
  * @property {MaxDuplicatesObject} [maxDuplicates] Amount of duplicate messages that trigger a warning / mute / kick / ban.
  *
@@ -212,26 +212,26 @@ class AntiSpamClient extends EventEmitter {
             },
             thresholds: {
                 warn: options.thresholds?.warn || 4,
-                mute: options.thresholds?.mute || 6,
-                kick: options.thresholds?.kick || 8,
-                ban: options.thresholds?.ban || 10,
+                mute: options.thresholds?.mute || 5,
+                kick: options.thresholds?.kick || 6,
+                ban: options.thresholds?.ban || 8,
             },
-            maxInterval: options.maxInterval || 2000,
+            maxInterval: options.maxInterval || 3000,
             maxDuplicatesInterval: options.maxDuplicatesInterval || 3000,
             maxDuplicates: {
                 warn: options.maxDuplicates?.warn || 4,
-                mute: options.maxDuplicates?.mute || 6,
-                kick: options.maxDuplicates?.kick || 8,
-                ban: options.maxDuplicates?.ban || 10,
+                mute: options.maxDuplicates?.mute || 5,
+                kick: options.maxDuplicates?.kick || 6,
+                ban: options.maxDuplicates?.ban || 8,
             },
             unMuteTime: options.unMuteTime * 60_000 || 600000,
             modLogsChannel: options.modLogsChannel || 'CHANNEL_ID',
             modLogsEnabled: options.modLogsEnabled || false,
             message: {
-                warn: options.message?.warn instanceof MessageEmbed ? options.message.warn.toJSON() : options.message.warn || '{@user} has been warned for reason: **{reason}**',
-                kick: options.message?.kick instanceof MessageEmbed ? options.message.kick.toJSON() : options.message.kick || '**{user_tag}** has been kicked for reason: **{reason}**',
-                mute: options.message?.mute instanceof MessageEmbed ? options.message.mute.toJSON() : options.message.mute || '@{user} has been muted for reason: **{reason}**',
-                ban: options.message?.ban instanceof MessageEmbed ? options.message.ban.toJSON() : options.message.ban || '**{user_tag}** has been banned for reason: **{reason}**',
+                warn: options.message?.warn !== undefined ? options.message?.warn instanceof MessageEmbed ? options.message.warn.toJSON() : options.message.warn : '{@user} has been warned for reason: **{reason}**',
+                kick: options.message?.kick !== undefined ? options.message?.kick instanceof MessageEmbed ? options.message.kick.toJSON() : options.message.kick : '**{user_tag}** has been kicked for reason: **{reason}**',
+                mute: options.message?.mute !== undefined ? options.message?.mute instanceof MessageEmbed ? options.message.mute.toJSON() : options.message.mute : '@{user} has been muted for reason: **{reason}**',
+                ban: options.message?.ban !== undefined ? options.message?.ban instanceof MessageEmbed ? options.message.ban.toJSON() : options.message.ban : '**{user_tag}** has been banned for reason: **{reason}**',
             },
             errorMessage: {
                 enabled: options.errorMessage?.enabled !== undefined ? options.errorMessage.enabled : true,
@@ -464,6 +464,7 @@ class AntiSpamClient extends EventEmitter {
         }
 
         /** KICK SANCTION */
+        if (sanctioned) return sanctioned;
         const userCanBeKicked = options.enable.kick && !cache.kickedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeKicked && (spamMatches.length >= options.thresholds.kick)) {
             this.emit('spamThresholdKick', message.member, false);
@@ -478,6 +479,7 @@ class AntiSpamClient extends EventEmitter {
         }
 
         /** MUTE SANCTION */
+        if (sanctioned) return sanctioned;
         const userCanBeMuted = options.enable.mute && !sanctioned;
         if (userCanBeMuted && (spamMatches.length >= options.thresholds.mute)) {
             this.emit('spamThresholdMute', message.member, false);
@@ -492,6 +494,7 @@ class AntiSpamClient extends EventEmitter {
         }
 
         /** WARN SANCTION */
+        if (sanctioned) return sanctioned;
         const userCanBeWarned = options.enable.warn && !cache.warnedUsers.includes(message.author.id) && !sanctioned;
         if (userCanBeWarned && (spamMatches.length >= options.thresholds.warn)) {
             this.emit('spamThresholdWarn', message.member, false);
@@ -505,7 +508,6 @@ class AntiSpamClient extends EventEmitter {
             sanctioned = true;
         }
 
-        await this.cache.set(message.guild.id, cache);
         return sanctioned;
     }
 
