@@ -8,18 +8,22 @@ import {
     TextChannel,
     GuildMember,
     Message,
-    DiscordAPIError,
+    //DiscordAPIError,
     MessageEmbed,
     Role
 } from 'discord.js';
 
+interface AntiSpamDataMessages {
+    messageID: Snowflake|string,
+    guildID: Snowflake|string,
+    authorID: Snowflake|string,
+    channelID: Snowflake|string,
+    content: string,
+    sentTimestamp: number
+}
+
 interface AntiSpamData {
-    messageCache: {
-        messageID: string;
-        content: string;
-        author: Snowflake;
-        time: number;
-    }[];
+    messages: AntiSpamDataMessages[];
     bannedUsers: Snowflake[];
     kickedUsers: Snowflake[];
     warnedUsers: Snowflake[];
@@ -74,14 +78,18 @@ interface EnableObject {
     ban?: boolean;
 }
 
+interface AntiSpamFilterObject {
+    thresholds?: ThresholdsObject;
+    maxDuplicates?: maxDuplicatesObject;
+    maxInterval?: number;
+    maxDuplicatesInterval?: number;
+}
+
 interface AntiSpamOptions {
     customGuildOptions?: boolean;
     wordsFilter?: boolean;
     linksFilter?: LinksFilterObject;
-    thresholds?: ThresholdsObject;
-    maxInterval?: number;
-    maxDuplicatesInterval?: number;
-    maxDuplicates?: maxDuplicatesObject;
+    antispamFilter?: AntiSpamFilterObject;
     message?: MessageObject;
     errorMessage?: ErrorMessageObject;
     unMuteTime?: number;
@@ -98,19 +106,23 @@ interface AntiSpamOptions {
 declare class AntiSpam extends EventEmitter {
     public client: Client;
     public options: AntiSpamOptions;
-    public data: AntiSpamData;
+    public data: Collection<Snowflake, AntiSpamData>;
 
     constructor(client: Client, options?: AntiSpamOptions);
 
+    /** Cache Message */
+    public addMessagesCache(message: Message): Promise<AntiSpamData>;
+
     /** Functions Guilds Options Management */
+    public getDefaultOptions(): AntiSpamOptions;
     public getGuildOptions(guild_id: string|Snowflake): AntiSpamOptions;
-    public setGuildOptions(guild_id: string|Snowflake, options: AntiSpamOptions): AntiSpamOptions;
+    public setGuildOptions(guild_id: string|Snowflake, options: AntiSpamOptions): Promise<AntiSpamOptions>;
 
     /** Function AntiSpam */
-    public message(message: Message, options: AntiSpamOptions): Promise<boolean>;
+    public messageAntiSpam(message: Message): Promise<boolean>;
 
     /** Functions for Words Filter System */
-    public messageWordsFilter(message: Message, options: AntiSpamOptions): Promise<boolean>;
+    public messageWordsFilter(message: Message): Promise<boolean>;
     public messageBadWordsUsages(message: Message): Promise<string[]>;
     public addWords(words: string|string[], guild_id: string|Snowflake): Promise<boolean>;
     public removeWords(words: string|string[], guild_id: string|Snowflake): Promise<boolean>;
@@ -128,14 +140,8 @@ declare class AntiSpam extends EventEmitter {
     public userLeave(member: GuildMember): void;
 
     /** All events (listeners) */
-    public on(
-        event: 'banAdd' | 'kickAdd' | 'warnAdd' | 'muteAdd',
-        listener: (member: GuildMember) => any
-    ): this;
-    public on(
-        event: 'spamThresholdBan' | 'spamThresholdKick' | 'spamThresholdWarn' | 'spamThresholdMute',
-        listener: (member: GuildMember, duplicateMessages: boolean) => any
-    ): this;
+    public on(event: 'banAdd' | 'kickAdd' | 'warnAdd' | 'muteAdd', listener: (member: GuildMember, reason: string) => any): this;
+    public on(event: 'spamThresholdBan' | 'spamThresholdKick' | 'spamThresholdWarn' | 'spamThresholdMute', listener: (member: GuildMember, duplicateMessages: boolean) => any): this;
 
     // TODO: Add support of error event with errors message system
     // public on(

@@ -36,23 +36,36 @@ const LogsManager = require('./lib/logs');
  * Emitted when a member gets warned.
  * @event AntiSpamClient#warnAdd
  * @property {GuildMember} member The member that was warned.
+ * @property {string} reason The reason for the warning.
  */
 
 /**
  * Emitted when a member gets kicked.
  * @event AntiSpamClient#kickAdd
  * @property {GuildMember} member The member that was kicked.
+ * @property {string} reason The reason for the kick.
  */
 
 /**
  * Emitted when a member gets muted.
  * @event AntiSpamClient#muteAdd
  * @property {GuildMember} member The member that was muted.
+ * @property {string} reason The reason for the mute.
  */
 /**
  * Emitted when a member gets banned.
  * @event AntiSpamClient#banAdd
  * @property {GuildMember} member The member that was banned.
+ * @property {string} reason The reason for the ban.
+ */
+
+/**
+ * Type of Sanction to applied
+ * @typedef TypeSanctions
+ * @property {string} ban Ban
+ * @property {string} kick Kick
+ * @property {string} warn Warn
+ * @property {string} mute Mute
  */
 
 /**
@@ -61,8 +74,16 @@ const LogsManager = require('./lib/logs');
  */
 
 /**
+ * Object of Words Filter System
+ * @typedef WordsFilterObject
+ * @property {boolean} enabled Whether the words filter is enabled
+ * @property {TypeSanctions} typeSanction The type of sanction to apply when a member trigger the words filter system
+ */
+
+/**
  * Object of Links Filter System
  * @typedef LinksFilterObject
+ * @property {boolean} enabled Whether the links filter is enabled
  * @property {boolean} globalLinksFilter Whether to filter global links (all links)
  * @property {boolean} discordInviteLinksFilter Whether to filter discord invite links
  * @property {boolean} customLinksFilter Whether to filter custom links per guild
@@ -84,6 +105,16 @@ const LogsManager = require('./lib/logs');
  * @property {number} [mute=5] Amount of duplicate messages that trigger a mute.
  * @property {number} [kick=6] Amount of duplicate messages that trigger a kick.
  * @property {number} [ban=8} Amount of duplicate messages that trigger a ban.
+ */
+
+/**
+ * Antispam Filter System
+ * @typedef AntispamFilterObject
+ * @property {boolean} enabled Whether the Antispam filter is enabled
+ * @property {ThresholdsObject} [thresholds] Amount of messages sent in a row that will cause a warning / mute / kick / ban.
+ * @property {number} [maxInterval=3000] Amount of time (ms) in which messages are considered spam.
+ * @property {number} [maxDuplicatesInterval=3000] Amount of time (ms) in which duplicate messages are considered spam.
+ * @property {MaxDuplicatesObject} [maxDuplicates] Amount of duplicate messages that trigger a warning / mute / kick / ban.
  */
 
 /**
@@ -128,15 +159,9 @@ const LogsManager = require('./lib/logs');
  * @typedef AntiSpamClientOptions
  *
  * @property {boolean} [customGuildOptions=false] Whether to use custom guild options
- * @property {boolean} [wordsFilter=false] Whether to use words filter system
+ * @property {WordsFilterObject} [wordsFilter] Whether to use words filter system
  * @property {LinksFilterObject} [linksFilter] Whether to use links filter system
- * @property {ThresholdsObject} [thresholds] Amount of messages sent in a row that will cause a warning / mute / kick / ban.
- *
- * @property {number} [maxInterval=3000] Amount of time (ms) in which messages are considered spam.
- * @property {number} [maxDuplicatesInterval=3000] Amount of time (ms) in which duplicate messages are considered spam.
- *
- * @property {MaxDuplicatesObject} [maxDuplicates] Amount of duplicate messages that trigger a warning / mute / kick / ban.
- *
+ * @property {antispamFilter} [antispamFilter] Whether to use antispam filter system.
  * @property {number} [unMuteTime=10] Time in minutes to wait until unmuting a user.
  * @property {string|Snowflake} [modLogsChannel='mod-logs'] ID of the channel in which moderation logs will be sent.
  * @property {boolean} [modLogsEnabled=false] Whether moderation logs are enabled.
@@ -152,7 +177,6 @@ const LogsManager = require('./lib/logs');
  * @property {boolean} [verbose=false] Extended logs from module (recommended).
  * @property {boolean} [debug=false] Whether to run the module in debug mode.
  * @property {boolean} [removeMessages=true] Whether to delete user messages after a sanction.
- *
  */
 
 /**
@@ -197,31 +221,49 @@ class AntiSpamClient extends EventEmitter {
         this.client = client;
 
         /**
+         * Type of Sanctions to be used
+         * @type {{warn: string, kick: string, mute: string, ban: string}}
+         */
+        this.types_sanction = {
+            warn: 'warn',
+            mute: 'mute',
+            kick: 'kick',
+            ban: 'ban',
+        };
+
+        /**
          * Default values of the options for AntiSpam Client
          * @type {AntiSpamClientOptions}
          * @private
          */
         this._defaultOptions = {
             customGuildOptions: options.customGuildOptions || false,
-            wordsFilter: options.wordsFilter || false,
+            wordsFilter: {
+                enabled: options.wordsFilter?.enabled !== undefined ? options.wordsFilter.enabled : false,
+                typeSanction: options.wordsFilter?.typeSanction || this.types_sanction.warn,
+            },
             linksFilter: {
+                enabled: options.linksFilter?.enabled !== undefined ? options.linksFilter.enabled : false,
                 globalLinksFilter: options.linksFilter?.globalLinksFilter !== undefined ? options.linksFilter.globalLinksFilter : false,
                 customLinksFilter: options.linksFilter?.customLinksFilter !== undefined ? options.linksFilter.customLinksFilter : false,
                 discordInviteLinksFilter: options.linksFilter?.discordInviteLinksFilter ? options.linksFilter.discordInviteLinksFilter : false,
             },
-            thresholds: {
-                warn: options.thresholds?.warn || 4,
-                mute: options.thresholds?.mute || 5,
-                kick: options.thresholds?.kick || 6,
-                ban: options.thresholds?.ban || 8,
-            },
-            maxInterval: options.maxInterval || 3000,
-            maxDuplicatesInterval: options.maxDuplicatesInterval || 3000,
-            maxDuplicates: {
-                warn: options.maxDuplicates?.warn || 4,
-                mute: options.maxDuplicates?.mute || 5,
-                kick: options.maxDuplicates?.kick || 6,
-                ban: options.maxDuplicates?.ban || 8,
+            antispamFilter: {
+                enabled: options.antispamFilter?.enabled !== undefined ? options.antispamFilter?.enabled : true,
+                thresholds: {
+                    warn: options.antispamFilter?.thresholds?.warn || 4,
+                    mute: options.antispamFilter?.thresholds?.mute || 5,
+                    kick: options.antispamFilter?.thresholds?.kick || 6,
+                    ban: options.antispamFilter?.thresholds?.ban || 8,
+                },
+                maxInterval: options.antispamFilter?.maxInterval || 3000,
+                maxDuplicatesInterval: options.antispamFilter?.maxDuplicatesInterval || 3000,
+                maxDuplicates: {
+                    warn: options.antispamFilter?.maxDuplicates?.warn || 4,
+                    mute: options.antispamFilter?.maxDuplicates?.mute || 5,
+                    kick: options.antispamFilter?.maxDuplicates?.kick || 6,
+                    ban: options.antispamFilter?.maxDuplicates?.ban || 8,
+                },
             },
             unMuteTime: options.unMuteTime * 60_000 || 600000,
             modLogsChannel: options.modLogsChannel || 'CHANNEL_ID',
@@ -231,6 +273,7 @@ class AntiSpamClient extends EventEmitter {
                 mute: options.message?.mute !== undefined ? options.message?.mute instanceof MessageEmbed ? options.message.mute.toJSON() : options.message.mute : '@{user} has been muted for reason: **{reason}**',
                 kick: options.message?.kick !== undefined ? options.message?.kick instanceof MessageEmbed ? options.message.kick.toJSON() : options.message.kick : '**{user_tag}** has been kicked for reason: **{reason}**',
                 ban: options.message?.ban !== undefined ? options.message?.ban instanceof MessageEmbed ? options.message.ban.toJSON() : options.message.ban : '**{user_tag}** has been banned for reason: **{reason}**',
+                logs: options.message?.logs !== undefined ? options.message?.logs instanceof MessageEmbed ? options.message.logs.toJSON() : options.message.logs : '{@user} `({user_id})` has been **${action}** for **${reason}** !',
             },
             errorMessage: {
                 enabled: options.errorMessage?.enabled !== undefined ? options.errorMessage.enabled : true,
@@ -305,27 +348,23 @@ class AntiSpamClient extends EventEmitter {
          * @type {SanctionsManager}
          */
         this.sanctions = new SanctionsManager(this);
-
-        /**
-         * Type of Sanctions to be used
-         * @type {{warn: string, kick: string, mute: string, ban: string}}
-         */
-        this.type_sanctions = {
-            warn: 'warn',
-            mute: 'mute',
-            kick: 'kick',
-            ban: 'ban',
-        }
     }
 
     /**
+     * Return default options for this AntiSpam client instance
+     * @returns {AntiSpamClientOptions}
+     */
+    async getDefaultOptions () {
+        return this._defaultOptions;
+    }
+    /**
      * Get cache for a guild
      * @param {string} guildID Guild ID
-     * @returns {AntiSpamCache}
+     * @returns {Promise<AntiSpamCache>}
      */
     async getCache (guildID) {
         if (!this.cache.has(guildID)) {
-            this.cache.set(guildID, {
+            await this.cache.set(guildID, {
                 messages: [],
                 warnedUsers: [],
                 kickedUsers: [],
@@ -333,6 +372,25 @@ class AntiSpamClient extends EventEmitter {
             });
         }
         return this.cache.get(guildID);
+    }
+
+    /**
+     *
+     * @param {Message} message Message object
+     * @returns {Promise<AntiSpamCache>}
+     */
+    async addMessagesCache (message) {
+        const cache = await this.getCache(message.guild.id);
+        cache.messages.push({
+            messageID: message.id,
+            guildID: message.guild.id,
+            authorID: message.author.id,
+            channelID: message.channel.id,
+            content: message.content,
+            sentTimestamp: message.createdTimestamp
+        });
+        await this.cache.set(message.guild.id, cache);
+        return this.cache.get(message.guild.id);
     }
 
     /**
@@ -416,31 +474,24 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>} Whether the message has triggered a threshold.
      * @example
      * client.on('message', (msg) => {
-     * 	antiSpam.message(msg);
+     * 	antiSpam.messageAntiSpam(msg);
      * });
      */
-    async message (message) {
+    async messageAntiSpam (message) {
         // Guild Options is priority
         const options = await this.getGuildOptions(message.guild.id) || this.options;
-        if (!options) return this.logs.logsError('Discord AntiSpam (message#failed): No options found!', options);
+        if (!options) return this.logs.logsVerbose('Discord AntiSpam (message#failed): No options found!', options);
+
+        if (!options.antispamFilter.enabled) return false;
 
         const can = await this.canRun(message, options);
         if (!can) return false;
 
-        const currentMessage = {
-            messageID: message.id,
-            guildID: message.guild.id,
-            authorID: message.author.id,
-            channelID: message.channel.id,
-            content: message.content,
-            sentTimestamp: message.createdTimestamp
-        }
+        // Add message to cache
         const cache = await this.getCache(message.guild.id);
-        cache.messages.push(currentMessage);
 
         const cachedMessages = cache.messages.filter((m) => m.authorID === message.author.id && m.guildID === message.guild.id);
-        const duplicateMatches = cachedMessages.filter((m) => m.content === message.content && (m.sentTimestamp > (currentMessage.sentTimestamp - options.maxDuplicatesInterval)));
-
+        const duplicateMatches = cachedMessages.filter((m) => m.content === message.content && (m.sentTimestamp > (message.createdTimestamp - options.antispamFilter.maxDuplicatesInterval)));
 
         /**
          * Duplicate messages sent before the threshold is triggered
@@ -456,65 +507,65 @@ class AntiSpamClient extends EventEmitter {
             })
         }
 
-        const spamMatches = cachedMessages.filter((m) => m.sentTimestamp > (Date.now() - options.maxInterval));
+        const spamMatches = cachedMessages.filter((m) => m.sentTimestamp > (Date.now() - options.antispamFilter.maxInterval));
         let sanctioned = false;
 
         /** BAN SANCTION */
         const userCanBeBanned = options.enable.ban && !cache.bannedUsers.includes(message.author.id) && !sanctioned;
-        if (userCanBeBanned && (spamMatches.length >= options.thresholds.ban)) {
+        if (userCanBeBanned && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.ban)) {
             this.emit('spamThresholdBan', message.member, false);
-            await this.sanctions.appliedSanction(this.type_sanctions.ban, message, spamMatches, options);
-            this.emit('banAdd', message.member);
+            await this.sanctions.appliedSanction(this.types_sanction.ban, message, 'Spamming',[...duplicateMatches, ...spamOtherDuplicates], options);
+            this.emit('banAdd', message.member, 'Spamming Duplicate Messages');
             sanctioned = true;
-        } else if (userCanBeBanned && (duplicateMatches.length >= options.maxDuplicates.ban)) {
+        } else if (userCanBeBanned && (spamMatches.length >= options.antispamFilter.thresholds.ban)) {
             this.emit('spamThresholdBan', message.member, false);
-            await this.sanctions.appliedSanction(this.type_sanctions.ban, message, [...duplicateMatches, ...spamOtherDuplicates], options);
-            this.emit('banAdd', message.member);
+            await this.sanctions.appliedSanction(this.types_sanction.ban, message, 'Spamming', spamMatches, options);
+            this.emit('banAdd', message.member, 'Spamming');
             sanctioned = true;
         }
 
         /** KICK SANCTION */
         if (sanctioned) return sanctioned;
         const userCanBeKicked = options.enable.kick && !cache.kickedUsers.includes(message.author.id) && !sanctioned;
-        if (userCanBeKicked && (spamMatches.length >= options.thresholds.kick)) {
-            this.emit('spamThresholdKick', message.member, false);
-            await this.sanctions.appliedSanction(this.type_sanctions.kick, message, spamMatches, options);
-            this.emit('kickAdd', message.member);
-            sanctioned = true;
-        } else if (userCanBeKicked && (duplicateMatches.length >= options.maxDuplicates.kick)) {
+        if (userCanBeKicked && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.kick)) {
             this.emit('spamThresholdKick', message.member, true);
-            await this.sanctions.appliedSanction(this.type_sanctions.kick, message, [...duplicateMatches, ...spamOtherDuplicates], options);
-            this.emit('kickAdd', message.member);
+            await this.sanctions.appliedSanction(this.types_sanction.kick, message, 'Spamming',[...duplicateMatches, ...spamOtherDuplicates], options);
+            this.emit('kickAdd', message.member, 'Spamming Duplicate Messages');
+            sanctioned = true;
+        } else if (userCanBeKicked && (spamMatches.length >= options.antispamFilter.thresholds.kick)) {
+            this.emit('spamThresholdKick', message.member, false);
+            await this.sanctions.appliedSanction(this.types_sanction.kick, message, 'Spamming', spamMatches, options);
+            this.emit('kickAdd', message.member, 'Spamming');
             sanctioned = true;
         }
 
         /** MUTE SANCTION */
         if (sanctioned) return sanctioned;
         const userCanBeMuted = options.enable.mute && !sanctioned;
-        if (userCanBeMuted && (spamMatches.length >= options.thresholds.mute)) {
-            this.emit('spamThresholdMute', message.member, false);
-            await this.sanctions.appliedSanction(this.type_sanctions.mute, message, spamMatches, options);
-            this.emit('muteAdd', message.member);
-            sanctioned = true;
-        } else if (userCanBeMuted && (duplicateMatches.length >= options.maxDuplicates.mute)) {
+        if (userCanBeMuted && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.mute)) {
             this.emit('spamThresholdMute', message.member, true);
-            await this.sanctions.appliedSanction(this.type_sanctions.mute, message, [...duplicateMatches, ...spamOtherDuplicates], options);
-            this.emit('muteAdd', message.member);
+            await this.sanctions.appliedSanction(this.types_sanction.mute, message, 'Spamming',[...duplicateMatches, ...spamOtherDuplicates], options);
+            this.emit('muteAdd', message.member, 'Spamming Duplicate Messages');
+            sanctioned = true;
+        } else if (userCanBeMuted && (spamMatches.length >= options.antispamFilter.thresholds.mute)) {
+            this.emit('spamThresholdMute', message.member, false);
+            await this.sanctions.appliedSanction(this.types_sanction.mute, message, 'Spamming', spamMatches, options);
+            this.emit('muteAdd', message.member, 'Spamming');
             sanctioned = true;
         }
 
         /** WARN SANCTION */
         if (sanctioned) return sanctioned;
         const userCanBeWarned = options.enable.warn && !cache.warnedUsers.includes(message.author.id) && !sanctioned;
-        if (userCanBeWarned && (spamMatches.length >= options.thresholds.warn)) {
-            this.emit('spamThresholdWarn', message.member, false);
-            await this.sanctions.appliedSanction(this.type_sanctions.warn, message, spamMatches, options);
-            this.emit('warnAdd', message.member);
-            sanctioned = true;
-        } else if (userCanBeWarned && (duplicateMatches.length >= options.maxDuplicates.warn)) {
+        if (userCanBeWarned && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.warn)) {
             this.emit('spamThresholdWarn', message.member, true);
-            await this.sanctions.appliedSanction(this.type_sanctions.warn, message, [...duplicateMatches, ...spamOtherDuplicates], options);
-            this.emit('warnAdd', message.member);
+            await this.sanctions.appliedSanction(this.types_sanction.warn, message, 'Spamming', [...duplicateMatches, ...spamOtherDuplicates], options);
+            this.emit('warnAdd', message.member, 'Spamming Duplicate Messages');
+            sanctioned = true;
+        } else if (userCanBeWarned && (spamMatches.length >= options.antispamFilter.thresholds.warn)) {
+            this.emit('spamThresholdWarn', message.member, false);
+            await this.sanctions.appliedSanction(this.types_sanction.warn, message, 'Spamming', spamMatches, options);
+            this.emit('warnAdd', message.member, 'Spamming');
             sanctioned = true;
         }
 
@@ -524,17 +575,25 @@ class AntiSpamClient extends EventEmitter {
     /**
      *
      * @param {Message} message Message to Object
-     * @returns {Promise<boolean|void>}
+     * @returns {Promise<boolean>}
      */
     async messageWordsFilter(message) {
         const options = await this.getGuildOptions(message.guild.id) || this.options;
-        if (!options) return this.logs.logsError('Discord AntiSpam (messageWordsFilter#failed): No options found!', options);
+        if (!options) return this.logs.logsVerbose('Discord AntiSpam (messageWordsFilter#failed): No options found!', options);
+
+        if (!options.wordsFilter.enabled) return false;
 
         const can = await this.canRun(message, options);
         if (!can) return false;
 
         /** Check if message contain bad words */
-        if (await this.anti_words.checkWord(message.cleanContent, message.guild.id)) return true;
+        const contain = await this.anti_words.checkWord(message.cleanContent, message.guild.id);
+        if (contain) {
+            await this.sanctions.appliedSanction(options.wordsFilter.typeSanction, message, 'Send prohibited words', [], options);
+            this.emit(`${options.wordsFilter.typeSanction}Add`, message.member, 'Send prohibited words');
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -544,8 +603,9 @@ class AntiSpamClient extends EventEmitter {
      */
     async messageLinksFilter(message) {
         const options = await this.getGuildOptions(message.guild.id) || this.options;
-        if (!options) return this.logs.logsError('Discord AntiSpam (messageLinksFilter#failed): No options found!', options);
+        if (!options) return this.logs.logsVerbose('Discord AntiSpam (messageLinksFilter#failed): No options found!', options);
 
+        if (!options.linksFilter.enabled) return false;
         if (!options.linksFilter.globalLinksFilter && !options.linksFilter.discordInviteLinksFilter && !options.linksFilter.customLinksFilter) return false;
 
         const can = await this.canRun(message, options);
@@ -562,11 +622,10 @@ class AntiSpamClient extends EventEmitter {
     /**
      *
      * @param {Message} message Message to check
-     * @returns {Promise<Array.string>}
+     * @returns {Promise<Array<string>>}
      */
     async messageBadWordsUsages(message) {
-        const options = await this.getGuildOptions(message.guild.id) || this.options;
-        if (!message) return this.logs.logsError('Discord AntiSpam (messageBadWordsUsages#failed): No message found!', options);
+        if (!message) return;
         return this.anti_words.checkBadWordsUsages(message.cleanContent, message.guild.id);
     }
 
@@ -578,8 +637,7 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>}
      */
     async addWords(words, guildId) {
-        const options = await this.getGuildOptions(guildId) || this.options;
-        if (!words || !guildId) return this.logs.logsError('Discord AntiSpam (addWords#failed): No words or Guild ID given !', options);
+        if (!words || !guildId) return false;
         return this.anti_words.addWords(words, guildId);
     }
 
@@ -591,8 +649,7 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>}
      */
     async addLinks(links, guildId) {
-        const options = await this.getGuildOptions(guildId) || this.options;
-        if (!links || !guildId) return this.logs.logsError('Discord AntiSpam (addLinks#failed): No links or Guild ID given !', options);
+        if (!links || !guildId) return false;
         return this.anti_links.addLinks(links, guildId);
     }
 
@@ -603,8 +660,7 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>}
      */
     async removeWords(words, guildId) {
-        const options = await this.getGuildOptions(guildId) || this.options;
-        if (!words || !guildId) return this.logs.logsError('Discord AntiSpam (removeWords#failed): No words or Guild ID given !', options);
+        if (!words || !guildId) return false;
         return this.anti_words.removeWords(words, guildId);
     }
 
@@ -615,8 +671,7 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>}
      */
     async removeLinks(links, guildId) {
-        const options = await this.getGuildOptions(guildId) || this.options;
-        if (!links || !guildId) return this.logs.logsError('Discord AntiSpam (removeLinks#failed): No links or Guild ID given !', options);
+        if (!links || !guildId) return false;
         return this.anti_links.removeLinks(links, guildId);
     }
 
@@ -632,7 +687,7 @@ class AntiSpamClient extends EventEmitter {
     /**
      * Get all links for a guild
      * @param {string} guildId Guild ID
-     * @returns {Promise<*>}
+     * @returns {Promise<Array<string>>}
      */
     async listLinks(guildId) {
         return this.anti_links.listLinks(guildId);
@@ -644,7 +699,7 @@ class AntiSpamClient extends EventEmitter {
      * @returns {Promise<boolean>} Whether the member has been removed
      * @example
      * client.on('guildMemberRemove', (member) => {
-     * 	antiSpam.userleave(member);
+     * 	antiSpam.userLeave(member);
      * });
      */
     async userLeave (member) {
