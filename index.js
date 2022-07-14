@@ -87,6 +87,7 @@ const LogsManager = require('./lib/logs');
  * @property {boolean} globalLinksFilter Whether to filter global links (all links)
  * @property {boolean} discordInviteLinksFilter Whether to filter discord invite links
  * @property {boolean} customLinksFilter Whether to filter custom links per guild
+ * @property {TypeSanctions} typeSanction The type of sanction to apply when a member trigger the links filter system
  */
 
 /**
@@ -247,6 +248,7 @@ class AntiSpamClient extends EventEmitter {
                 globalLinksFilter: options.linksFilter?.globalLinksFilter !== undefined ? options.linksFilter.globalLinksFilter : false,
                 customLinksFilter: options.linksFilter?.customLinksFilter !== undefined ? options.linksFilter.customLinksFilter : false,
                 discordInviteLinksFilter: options.linksFilter?.discordInviteLinksFilter ? options.linksFilter.discordInviteLinksFilter : false,
+                typeSanction: options.linksFilter?.typeSanction || this.types_sanction.warn,
             },
             antispamFilter: {
                 enabled: options.antispamFilter?.enabled !== undefined ? options.antispamFilter?.enabled : true,
@@ -613,10 +615,17 @@ class AntiSpamClient extends EventEmitter {
 
         let contain_links = false;
         /** Global filter override */
-        if (options.linksFilter.globalLinksFilter) return this.anti_links.hasGlobalLink(message);
-        if (options.linksFilter.discordInviteLinksFilter) contain_links = await this.anti_links.hasDiscordInviteLink(message);
-        if (options.linksFilter.customLinksFilter) contain_links = await this.anti_links.hasCustomLinks(message, message.guild.id);
-        return contain_links;
+        if (options.linksFilter.globalLinksFilter) await this.anti_links.hasGlobalLink(message) === true ? contain_links = true : null;
+        if (options.linksFilter.discordInviteLinksFilter) await this.anti_links.hasDiscordInviteLink(message) === true ? contain_links = true : null;
+        if (options.linksFilter.customLinksFilter) await this.anti_links.hasCustomLinks(message, message.guild.id) === true ? contain_links = true : null;
+
+        if (contain_links) {
+            await this.sanctions.appliedSanction(options.linksFilter.typeSanction, message, 'Send unauthorized links', [], options);
+            this.emit(`${options.linksFilter.typeSanction}Add`, message.member, 'Send unauthorized links');
+            return true;
+        }
+
+        return false;
     }
 
     /**

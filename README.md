@@ -50,6 +50,7 @@ npm i @devraelfreeze/discordjs-antispam
 | `linksFilter.globalLinksFilter` | `false` | Whether to filter global links (all links) |
 | `linksFilter.discordInviteLinksFilter` | `false` | Whether to filter discord invite links |
 | `linksFilter.customLinksFilter` | `false` | Whether to filter custom links per guild |
+| `linksFilter.typeSanction` | `warn` | The type of sanction to apply when a member trigger the links filter system |
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
@@ -120,7 +121,7 @@ const AntiSpam = require("@devraelfreeze/discordjs-antispam");
 const antiSpam = new AntiSpam(client, {
     wordsFilter: {
         enabled: false,
-        typeSanction: "warn", // warn or mute or ban or kick
+        typeSanction: 'warn', // warn or mute or ban or kick
     },
     antispamFilter: {
         thresholds: {
@@ -142,7 +143,8 @@ const antiSpam = new AntiSpam(client, {
         enabled: false,
         globalLinksFilter: false,
         discordInviteLinksFilter: false,
-        customLinksFilter: false
+        customLinksFilter: false,
+        typeSanction: 'warn'
     },
     unMuteTime: 10,
     deleteMessagesAfterBanForPastDays: 1,
