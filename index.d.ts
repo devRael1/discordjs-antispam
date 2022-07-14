@@ -13,6 +13,8 @@ import {
     Role
 } from 'discord.js';
 
+type TypesSanction = 'ban' | 'kick' | 'mute' | 'unmute' | 'warn';
+
 interface AntiSpamDataMessages {
     messageID: Snowflake|string,
     guildID: Snowflake|string,
@@ -29,10 +31,17 @@ interface AntiSpamData {
     warnedUsers: Snowflake[];
 }
 
+interface WordsFilterObject {
+    enabled?: boolean;
+    typeSanction?: TypesSanction;
+}
+
 interface LinksFilterObject {
+    enabled?: boolean;
     globalLinksFilter?: boolean;
     customLinksFilter?: boolean;
     discordInviteLinksFilter?: boolean;
+    typeSanction?: TypesSanction;
 }
 
 interface ThresholdsObject {
@@ -54,6 +63,7 @@ interface MessageObject {
     mute?: string | MessageEmbed;
     kick?: string | MessageEmbed;
     ban?: string | MessageEmbed;
+    logs?: string | MessageEmbed;
 }
 
 interface ErrorMessageObject {
@@ -79,6 +89,7 @@ interface EnableObject {
 }
 
 interface AntiSpamFilterObject {
+    enabled?: boolean;
     thresholds?: ThresholdsObject;
     maxDuplicates?: maxDuplicatesObject;
     maxInterval?: number;
@@ -87,7 +98,7 @@ interface AntiSpamFilterObject {
 
 interface AntiSpamOptions {
     customGuildOptions?: boolean;
-    wordsFilter?: boolean;
+    wordsFilter?: WordsFilterObject;
     linksFilter?: LinksFilterObject;
     antispamFilter?: AntiSpamFilterObject;
     message?: MessageObject;
