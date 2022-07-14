@@ -273,7 +273,7 @@ class AntiSpamClient extends EventEmitter {
                 mute: options.message?.mute !== undefined ? options.message?.mute instanceof MessageEmbed ? options.message.mute.toJSON() : options.message.mute : '@{user} has been muted for reason: **{reason}**',
                 kick: options.message?.kick !== undefined ? options.message?.kick instanceof MessageEmbed ? options.message.kick.toJSON() : options.message.kick : '**{user_tag}** has been kicked for reason: **{reason}**',
                 ban: options.message?.ban !== undefined ? options.message?.ban instanceof MessageEmbed ? options.message.ban.toJSON() : options.message.ban : '**{user_tag}** has been banned for reason: **{reason}**',
-                logs: options.message?.logs !== undefined ? options.message?.logs instanceof MessageEmbed ? options.message.logs.toJSON() : options.message.logs : '{@user} `({user_id})` has been **${action}** for **${reason}** !',
+                logs: options.message?.logs !== undefined ? options.message?.logs instanceof MessageEmbed ? options.message.logs.toJSON() : options.message.logs : '{@user} `({user_id})` has been **{action}** for **{reason}** !',
             },
             errorMessage: {
                 enabled: options.errorMessage?.enabled !== undefined ? options.errorMessage.enabled : true,

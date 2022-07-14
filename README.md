@@ -29,9 +29,6 @@ npm i @devraelfreeze/discordjs-antispam
 | Options Name | Default Value | Description |
 | :--- | :---: | :--- |
 | `customGuildOptions` | `false` | Whether to use custom guild options |
-| `wordsFilter` | `false` | Whether to use words filter system |
-| `maxInterval` | `3000` | Amount of time (ms) in which messages are considered spam. |
-| `maxDuplicatesInterval` | `3000` | Amount of time (ms) in which duplicate messages are considered spam. |
 | `unMuteTime` | `10` | Time in minutes to wait until unmuting a user. |
 | `modLogsEnabled` | `false` | Whether moderation logs are enabled. |
 | `modLogsChannel` | `CHANNEL_ID` | ID of the channel in which moderation logs will be sent. |
@@ -42,10 +39,26 @@ npm i @devraelfreeze/discordjs-antispam
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
+| `wordsFilter` | `object` | Whether to use words filter system |
+| `wordsFilter.enabled` | `false` | Whether to use links filter system |
+| `wordsFilter.typeSanction` | `warn` | The type of sanction to apply when a member trigger the words filter system |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
 | `linksFilter` | `object` | Whether to use links filter system |
+| `linksFilter.enabled` | `false` | Whether to use links filter system |
 | `linksFilter.globalLinksFilter` | `false` | Whether to filter global links (all links) |
 | `linksFilter.discordInviteLinksFilter` | `false` | Whether to filter discord invite links |
 | `linksFilter.customLinksFilter` | `false` | Whether to filter custom links per guild |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `antispamFilter` | `object` | Whether to use antispam filter system |
+| `enabled` | `true` | Enable / Disable antispam filter system |
+| `thresholds` | `object` | Thresholds Object **(See below for Options Object)** |
+| `maxDuplicates` | `object` | MaxDuplicates Object **(See below for Options Object)** |
+| `maxInterval` | `3000` | Amount of time (ms) in which messages are considered spam. |
+| `maxDuplicatesInterval` | `3000` | Amount of time (ms) in which duplicate messages are considered spam. |
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
@@ -70,6 +83,8 @@ npm i @devraelfreeze/discordjs-antispam
 | `message.mute` | `'@{user} has been muted for reason: **{reason}**'` | Message that will be sent when someone is muted. |
 | `message.kick` | `'**{user_tag}** has been kicked for reason: **{reason}**'` | Message that will be sent when someone is kicked. |
 | `message.ban` | `'**{user_tag}** has been banned for reason: **{reason}**'` | Message that will be sent when someone is banned. |
+| `message.logs` | `'{@user} '({user_id})' has been **${action}** for **${reason}** !'` | Message logs system (with modLogs Channel & Enabled) |
+
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
@@ -103,32 +118,37 @@ npm i @devraelfreeze/discordjs-antispam
 /** See all options above */
 const AntiSpam = require("@devraelfreeze/discordjs-antispam");
 const antiSpam = new AntiSpam(client, {
-    customGuildOptions: true,
-    wordsFilter: true,
-    maxInterval: 2000,
-    maxDuplicatesInterval: 2000,
-    unMuteTime: 10,
-    deleteMessagesAfterBanForPastDays: 1,
-    verbose: false,
-    debug: false,
-    removeMessages: true,
+    wordsFilter: {
+        enabled: false,
+        typeSanction: "warn", // warn or mute or ban or kick
+    },
+    antispamFilter: {
+        thresholds: {
+            warn: 4,
+            mute: 6,
+            kick: 8,
+            ban: 10
+        },
+        maxDuplicates: {
+            warn: 4,
+            mute: 6,
+            kick: 8,
+            ban: 10
+        },
+        maxInterval: 3000,
+        maxDuplicatesInterval: 3000,
+    },
     linksFilter: {
+        enabled: false,
         globalLinksFilter: false,
         discordInviteLinksFilter: false,
         customLinksFilter: false
     },
-    thresholds: {
-        warn: 4,
-        mute: 6,
-        kick: 8,
-        ban: 10
-    },
-    maxDuplicates: {
-        warn: 4,
-        mute: 6,
-        kick: 8,
-        ban: 10
-    }
+    unMuteTime: 10,
+    deleteMessagesAfterBanForPastDays: 1,
+    verbose: true,
+    debug: false,
+    removeMessages: true
 });
 ```
 ---
@@ -145,7 +165,9 @@ const antiSpam = new AntiSpam(client, {
 });
 client.on("ready", () => console.log(`Logged in as ${client.user.tag}.`));
 client.on("messageCreate", async (message) => {
-    await antiSpam.message(message);
+    /** Add message in cache */
+    await antiSpam.addMessagesCache(message); // You must do this if you want to use antispamFilter System
+    await antiSpam.messageAntiSpam(message);
 });
 /** Login the bot */
 client.login("VERY SECRET TOKEN HERE :)");
@@ -160,6 +182,7 @@ const client = new Discord.Client({
 });
 const AntiSpam = require("@devraelfreeze/discordjs-antispam");
 const antiSpam = new AntiSpam(client, {customGuildOptions: true});
+
 client.on("ready", async () => {
     console.log(`Logged in as ${client.user.tag}.`)
     /** Custom guild options in Object */
@@ -168,7 +191,8 @@ client.on("ready", async () => {
     await antiSpam.setGuildOptions(guildId, guildOptions);
 });
 client.on("messageCreate", async (message) => {
-    await antiSpam.message(message);
+    await antiSpam.addMessagesCache(message); // You must do this if you want to use antispamFilter System
+    await antiSpam.addMessagesCache(message);
 });
 /** Login the bot */
 client.login("VERY SECRET TOKEN HERE :)");
