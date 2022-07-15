@@ -99,6 +99,13 @@ const LogsManager = require('./lib/logs');
  * @property {TypeSanctions} typeSanction The type of sanction to apply when a member trigger the mentions filter system
  */
 
+/**
+ * Object of Emojis Filter System
+ * @typedef EmojisFilterObject
+ * @property {boolean} enabled Whether the emojis filter is enabled
+ * @property {TypeSanctions} typeSanction The type of sanction to apply when a member trigger the emojis filter system
+ * @property {number} maxEmojis Max emojis allowed
+ */
 
 /**
  * Object of Thresholds System
@@ -174,6 +181,7 @@ const LogsManager = require('./lib/logs');
  * @property {LinksFilterObject} [linksFilter] Whether to use links filter system
  * @property {antispamFilter} [antispamFilter] Whether to use antispam filter system.
  * @property {MentionsFilterObject} [mentionsFilter] Whether to use mas mentions filter system.
+ * @property {EmojisFilterObject} [emojisFilter] Whether to use emojis filter system.
  * @property {number} [unMuteTime=10] Time in minutes to wait until unmuting a user.
  * @property {string|Snowflake} [modLogsChannel='mod-logs'] ID of the channel in which moderation logs will be sent.
  * @property {boolean} [modLogsEnabled=false] Whether moderation logs are enabled.
@@ -278,6 +286,11 @@ class AntiSpamClient extends EventEmitter {
                 enabled: options.mentionsFilter?.enabled !== undefined ? options.mentionsFilter.enabled : false,
                 maxMentions: options.mentionsFilter?.maxMentions || 5,
                 typeSanction: options.mentionsFilter?.typeSanction || this.types_sanction.warn,
+            },
+            emojisFilter: {
+                enabled: options.emojisFilter?.enabled !== undefined ? options.emojisFilter.enabled : false,
+                maxEmojis: options.emojisFilter?.maxEmojis || 7,
+                typeSanction: options.emojisFilter?.typeSanction || this.types_sanction.warn,
             },
             unMuteTime: options.unMuteTime * 60_000 || 600000,
             modLogsChannel: options.modLogsChannel || 'CHANNEL_ID',
@@ -653,7 +666,7 @@ class AntiSpamClient extends EventEmitter {
 
     /**
      * Check Mass Mentions System
-     * @param message Message to Object
+     * @param {Message} message Message to Object
      * @returns {Promise<boolean>}
      */
     async messageMentionsFilter(message) {
@@ -674,6 +687,33 @@ class AntiSpamClient extends EventEmitter {
             await this.sanctions.appliedSanction(options.mentionsFilter.typeSanction, message, 'Mass Mentions', [], options);
             this.emit(`${options.mentionsFilter.typeSanction}Add`, message.member, 'Mass Mentions');
             return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check Mass Emojis System
+     * @param {Message} message Message to Object
+     * @returns {Promise<boolean|void>}
+     */
+    async messageEmojisFilter(message) {
+        const options = await this.getGuildOptions(message.guild.id) || this.options;
+        if (!options) return this.logs.logsVerbose('Discord AntiSpam (messageEmojisFilter#failed): No options found!', options);
+
+        if (!options.emojisFilter.enabled) return false;
+
+        const can = await this.canRun(message, options);
+        if (!can) return false;
+
+        const regex = /(<a?)?:\w+:(\d{18}>)?/gm;
+
+        if (regex.test(message.content)) {
+            const matches = [...message.content.match(regex)];
+            if (matches.length >= options.emojisFilter.maxEmojis) {
+                await this.sanctions.appliedSanction(options.emojisFilter.typeSanction, message, 'Mass Emojis', [], options);
+                this.emit(`${options.emojisFilter.typeSanction}Add`, message.member, 'Mass Emojis');
+                return true;
+            }
         }
         return false;
     }

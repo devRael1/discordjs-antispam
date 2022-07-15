@@ -102,12 +102,19 @@ interface AntiSpamFilterObject {
     maxDuplicatesInterval?: number;
 }
 
+interface EmojisFilterObject {
+    enabled?: boolean;
+    maxEmojis?: number;
+    typeSanction?: TypesSanction;
+}
+
 interface AntiSpamOptions {
     customGuildOptions?: boolean;
     wordsFilter?: WordsFilterObject;
     linksFilter?: LinksFilterObject;
     antispamFilter?: AntiSpamFilterObject;
     mentionsFilter?: MentionsFilterObject;
+    emojisFilter?: EmojisFilterObject;
     message?: MessageObject;
     errorMessage?: ErrorMessageObject;
     unMuteTime?: number;
@@ -152,8 +159,9 @@ declare class AntiSpam extends EventEmitter {
     public removeLinks(links: string|string[], guild_id: string|Snowflake): Promise<boolean>;
     public listLinks(guild_id: string|Snowflake): Promise<string[]>;
 
-    /** Function for Mass Mentions Filter System */
+    /** Function for Mass Mentions & Mass Emojis Filter System */
     public messageMentionsFilter(message: Message): Promise<boolean>;
+    public messageEmojisFilter(message: Message): Promise<boolean>;
 
     /** Functions utility */
     public resetGuild(guild_id: string|Snowflake): AntiSpamData;
