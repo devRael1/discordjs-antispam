@@ -39,13 +39,13 @@ npm i @devraelfreeze/discordjs-antispam
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
-| `wordsFilter` | `object` | Whether to use words filter system |
+| `wordsFilter` | `object` | Words Filter System |
 | `wordsFilter.enabled` | `false` | Whether to use links filter system |
 | `wordsFilter.typeSanction` | `warn` | The type of sanction to apply when a member trigger the words filter system |
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
-| `linksFilter` | `object` | Whether to use links filter system |
+| `linksFilter` | `object` | Links Filter System |
 | `linksFilter.enabled` | `false` | Whether to use links filter system |
 | `linksFilter.globalLinksFilter` | `false` | Whether to filter global links (all links) |
 | `linksFilter.discordInviteLinksFilter` | `false` | Whether to filter discord invite links |
@@ -54,12 +54,19 @@ npm i @devraelfreeze/discordjs-antispam
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
-| `antispamFilter` | `object` | Whether to use antispam filter system |
+| `antispamFilter` | `object` | Anti Spam Filter System |
 | `enabled` | `true` | Enable / Disable antispam filter system |
 | `thresholds` | `object` | Thresholds Object **(See below for Options Object)** |
 | `maxDuplicates` | `object` | MaxDuplicates Object **(See below for Options Object)** |
 | `maxInterval` | `3000` | Amount of time (ms) in which messages are considered spam. |
 | `maxDuplicatesInterval` | `3000` | Amount of time (ms) in which duplicate messages are considered spam. |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
+| `mentionsFilter` | `object` | Mentions Filter System |
+| `mentionsFilter.enabled` | `false` | Enable / Disable mass mentions filter system |
+| `mentionsFilter.maxMentions` | `5` | Max mentions allowed per message |
+| `mentionsFilter.typeSanction` | `warn` | The type of sanction to apply when a member trigger the Mentions Filter System |
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
@@ -242,8 +249,8 @@ client.on("messageCreate", async (message) => {
 ```js
 /** Declare & Use module with 'messageCreate' event */
 client.on("messageCreate", async (message) => {
-    const contain_words = await antiSpam.messageLinksFilter(message);
-    if (conatin_words) {
+    const contain_links = await antiSpam.messageLinksFilter(message);
+    if (contain_links) {
         /** Message contain link(s) */
     } else {
         /** Message doesn't contain link(s) */
@@ -255,14 +262,14 @@ client.on("messageCreate", async (message) => {
      * @param {string} guild_id - ID of the guild
      * @returns {Promise<boolean>} true if added or false if not added
      */
-    const addLink = await antiSpam.addLinks('https://discord.gg/123456789', message.guild.id);
+    const addLink = await antiSpam.addLinks(['https://discord.gg/123456789'], message.guild.id);
     /**
      * Remove link / links for a guild
      * @param {string|Array<string>} links - Links to remove
      * @param {string} guild_id - ID of the guild
      * @returns {Promise<boolean>} true if removed or false if not removed.
      */
-    const removeLink = await antiSpam.removeLinks('https://discord.gg/123456789', message.guild.id);
+    const removeLink = await antiSpam.removeLinks(['https://discord.gg/123456789'], message.guild.id);
     /**
      * Get links list for a guild.
      * @param {string} guild_id - ID of the guild
@@ -270,7 +277,21 @@ client.on("messageCreate", async (message) => {
      */
     const linksList = await antiSpam.listLinks(message.guild.id);
 });
-````
+```
+---
+### Example: Use Mass Mentions Filter System (Function)
+```js
+/** Declare & Use module with 'messageCreate' event */
+client.on("messageCreate", async (message) => {
+    const mass_mentions = await antiSpam.messageMentionsFilter(message);
+    if (mass_mentions) {
+        /** Message contain too much mentions */
+    } else {
+        /** Message isn't mass mentions */
+    }
+});
+```
+
 
 ## ⏳ TODO
 
@@ -278,7 +299,7 @@ client.on("messageCreate", async (message) => {
 * ✅ Add and Test: `Words Filter System` (Can configure the words list to filter) 
 * ✅ Add and Test: `Anti Discord Invites Links System`
 * ✅ Add and Test: `Anti Links System` (Can configure links to filter)
-* Add and Test: `Mass Mentions System`
+* ✅ Add and Test: `Mass Mentions System`
 * Add and Test: `Emojis excessifs System`
 * ✅ Bypass Bots for All Systems *(Can be enabled or Disabled)*
 * ✅ Complete ⚙️ AntiSpam Client Options

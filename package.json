@@ -1,7 +1,7 @@
 {
   "name": "@devraelfreeze/discordjs-antispam",
-  "version": "1.8.5",
-  "description": "Complex Antispam module for Discord JS",
+  "version": "1.9.0",
+  "description": "Complex Antispam & AutoMod module for Discord JS",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -21,13 +21,13 @@
     "auto-moderation",
     "auto-mod",
     "discordjs v13",
+    "discordjs-antispam",
     "multi-guilds",
     "configurable",
     "words-filter",
-    "link-filter",
-    "discord-invite-filter",
-    "discord-invite",
-    "discord-invites"
+    "links-filter",
+    "discord-invites-filter",
+    "mass-mentions-filter"
   ],
   "repository": {
     "type": "git",
