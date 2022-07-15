@@ -44,6 +44,12 @@ interface LinksFilterObject {
     typeSanction?: TypesSanction;
 }
 
+interface MentionsFilterObject {
+    enabled?: boolean;
+    maxMentions?: number;
+    typeSanction?: TypesSanction;
+}
+
 interface ThresholdsObject {
     warn?: number;
     mute?: number;
@@ -101,6 +107,7 @@ interface AntiSpamOptions {
     wordsFilter?: WordsFilterObject;
     linksFilter?: LinksFilterObject;
     antispamFilter?: AntiSpamFilterObject;
+    mentionsFilter?: MentionsFilterObject;
     message?: MessageObject;
     errorMessage?: ErrorMessageObject;
     unMuteTime?: number;
@@ -144,6 +151,9 @@ declare class AntiSpam extends EventEmitter {
     public addLinks(links: string|string[], guild_id: string|Snowflake): Promise<boolean>;
     public removeLinks(links: string|string[], guild_id: string|Snowflake): Promise<boolean>;
     public listLinks(guild_id: string|Snowflake): Promise<string[]>;
+
+    /** Function for Mass Mentions Filter System */
+    public messageMentionsFilter(message: Message): Promise<boolean>;
 
     /** Functions utility */
     public resetGuild(guild_id: string|Snowflake): AntiSpamData;

@@ -7,7 +7,8 @@ const { Client,
     Collection,
     MessageEmbed,
     TextChannel,
-    PermissionString
+    PermissionString,
+    MessageMentions: { USERS_PATTERN, EVERYONE_PATTERN, ROLES_PATTERN  }
 } = require('discord.js');
 const WordsFilterSystem = require('./lib/words');
 const LinksFilterSystem = require('./lib/links');
@@ -91,6 +92,15 @@ const LogsManager = require('./lib/logs');
  */
 
 /**
+ * Object of Mentions Filter System
+ * @typedef MentionsFilterObject
+ * @property {boolean} enabled Whether the mentions filter is enabled
+ * @property {number} maxMentions Max mentions allowed
+ * @property {TypeSanctions} typeSanction The type of sanction to apply when a member trigger the mentions filter system
+ */
+
+
+/**
  * Object of Thresholds System
  * @typedef ThresholdsObject
  * @property {number} [warn=4] Amount of messages sent in a row that will cause a warning.
@@ -163,6 +173,7 @@ const LogsManager = require('./lib/logs');
  * @property {WordsFilterObject} [wordsFilter] Whether to use words filter system
  * @property {LinksFilterObject} [linksFilter] Whether to use links filter system
  * @property {antispamFilter} [antispamFilter] Whether to use antispam filter system.
+ * @property {MentionsFilterObject} [mentionsFilter] Whether to use mas mentions filter system.
  * @property {number} [unMuteTime=10] Time in minutes to wait until unmuting a user.
  * @property {string|Snowflake} [modLogsChannel='mod-logs'] ID of the channel in which moderation logs will be sent.
  * @property {boolean} [modLogsEnabled=false] Whether moderation logs are enabled.
@@ -262,6 +273,11 @@ class AntiSpamClient extends EventEmitter {
                     kick: options.antispamFilter?.maxDuplicates?.kick || 6,
                     ban: options.antispamFilter?.maxDuplicates?.ban || 8,
                 },
+            },
+            mentionsFilter: {
+                enabled: options.mentionsFilter?.enabled !== undefined ? options.mentionsFilter.enabled : false,
+                maxMentions: options.mentionsFilter?.maxMentions || 5,
+                typeSanction: options.mentionsFilter?.typeSanction || this.types_sanction.warn,
             },
             unMuteTime: options.unMuteTime * 60_000 || 600000,
             modLogsChannel: options.modLogsChannel || 'CHANNEL_ID',
@@ -630,6 +646,33 @@ class AntiSpamClient extends EventEmitter {
         if (contain_links) {
             await this.sanctions.appliedSanction(options.linksFilter.typeSanction, message, 'Send unauthorized links', [], options);
             this.emit(`${options.linksFilter.typeSanction}Add`, message.member, 'Send unauthorized links');
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check Mass Mentions System
+     * @param message Message to Object
+     * @returns {Promise<boolean>}
+     */
+    async messageMentionsFilter(message) {
+        const options = await this.getGuildOptions(message.guild.id) || this.options;
+        if (!options) return this.logs.logsVerbose('Discord AntiSpam (messageMentionsFilter#failed): No options found!', options);
+
+        if (!options.mentionsFilter.enabled) return false;
+
+        const can = await this.canRun(message, options);
+        if (!can) return false;
+
+        let matches = [];
+        matches.push(...message.content.match(USERS_PATTERN));
+        matches.push(...message.content.match(EVERYONE_PATTERN));
+        matches.push(...message.content.match(ROLES_PATTERN));
+
+        if (matches.length >= options.mentionsFilter.maxMentions) {
+            await this.sanctions.appliedSanction(options.mentionsFilter.typeSanction, message, 'Mass Mentions', [], options);
+            this.emit(`${options.mentionsFilter.typeSanction}Add`, message.member, 'Mass Mentions');
             return true;
         }
         return false;
