@@ -70,6 +70,13 @@ npm i @devraelfreeze/discordjs-antispam
 
 | Options Object Name | Default Value | Description |
 | :--- | :---: | :--- |
+| `emojisFilter` | `object` | Emojis Filter System |
+| `emojisFilter.enabled` | `false` | Enable / Disable mass emojis filter system |
+| `emojisFilter.maxEmojis` | `7` | Max emojis allowed per message |
+| `emojisFilter.typeSanction` | `warn` | The type of sanction to apply when a member trigger the Emojis Filter System |
+
+| Options Object Name | Default Value | Description |
+| :--- | :---: | :--- |
 | `thresholds` | `object` | Amount of messages sent in a row that will cause a warning / mute / kick / ban. |
 | `thresholds.warn` | `4` | Amount of messages sent in a row that will cause a warning. |
 | `thresholds.mute` | `5` | Amount of messages sent in a row that will cause a mute. |
@@ -201,7 +208,7 @@ client.on("ready", async () => {
 });
 client.on("messageCreate", async (message) => {
     await antiSpam.addMessagesCache(message); // You must do this if you want to use antispamFilter System
-    await antiSpam.addMessagesCache(message);
+    await antiSpam.messageAntiSpam(message); // Use antispam filter system
 });
 /** Login the bot */
 client.login("VERY SECRET TOKEN HERE :)");
@@ -279,7 +286,7 @@ client.on("messageCreate", async (message) => {
 });
 ```
 ---
-### Example: Use Mass Mentions Filter System (Function)
+### Example: Use Mass Mentions & Mass Emojis Filter System (Functions)
 ```js
 /** Declare & Use module with 'messageCreate' event */
 client.on("messageCreate", async (message) => {
@@ -289,9 +296,14 @@ client.on("messageCreate", async (message) => {
     } else {
         /** Message isn't mass mentions */
     }
+    const mass_emojis = await antiSpam.messageEmojisFilter(message);
+    if (mass_emojis) {
+        /** Message contain too much emojis */
+    } else {
+        /** Message isn't mass emojis */
+    }
 });
 ```
-
 
 ## ⏳ TODO
 
