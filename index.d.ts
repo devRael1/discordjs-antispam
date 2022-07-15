@@ -13,7 +13,7 @@ import {
     Role
 } from 'discord.js';
 
-type TypesSanction = 'ban' | 'kick' | 'mute' | 'unmute' | 'warn';
+type TypesSanction = 'ban' | 'kick' | 'mute' | 'warn';
 
 interface AntiSpamDataMessages {
     messageID: Snowflake|string,
