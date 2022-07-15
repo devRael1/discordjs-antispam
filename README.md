@@ -312,7 +312,7 @@ client.on("messageCreate", async (message) => {
 * ✅ Add and Test: `Anti Discord Invites Links System`
 * ✅ Add and Test: `Anti Links System` (Can configure links to filter)
 * ✅ Add and Test: `Mass Mentions System`
-* Add and Test: `Emojis excessifs System`
+* ✅ Add and Test: `Emojis excessifs System`
 * ✅ Bypass Bots for All Systems *(Can be enabled or Disabled)*
 * ✅ Complete ⚙️ AntiSpam Client Options
 * ✅ Find a method to clear cache for a guild when the cache is too big.
