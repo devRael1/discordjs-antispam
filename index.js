@@ -705,7 +705,7 @@ class AntiSpamClient extends EventEmitter {
         const can = await this.canRun(message, options);
         if (!can) return false;
 
-        const regex = /(<a?)?:\w+:(\d{18}>)?/gm;
+        const regex = /(<a?)?:\w+:(\d{18}>)?|\p{Emoji_Presentation}/gmu;
 
         if (regex.test(message.content)) {
             const matches = [...message.content.match(regex)];
