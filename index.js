@@ -472,7 +472,7 @@ class AntiSpamClient extends EventEmitter {
     async messageAntiSpam (message) {
         // Guild Options is priority
         const options = await this.getGuildOptions(message.guild.id) || this.options;
-        if (!options) return this.logs.logsVerbose('Discord AntiSpam (message#failed): No options found!', options);
+        if (!options) return this.logs.logsVerbose('Discord AntiSpam (messageAntiSpam#failed): No options found!', options);
 
         if (!options.antispamFilter.enabled) return false;
 
@@ -636,7 +636,7 @@ class AntiSpamClient extends EventEmitter {
     }
 
     /**
-     *
+     * Return all bad words from the message with list of bad words for the guild
      * @param {Message} message Message to check
      * @returns {Promise<Array<string>>}
      */
@@ -729,9 +729,7 @@ class AntiSpamClient extends EventEmitter {
      * Reset the cache of this AntiSpam client instance.
      */
     async resetGuild (guildID) {
-        let cache = {
-            messages: []
-        }
+        let cache = {messages: []};
         await this.cache.set(guildID, cache);
     }
 
