@@ -1,6 +1,6 @@
 {
   "name": "@devraelfreeze/discordjs-antispam",
-  "version": "1.9.2",
+  "version": "1.9.4",
   "description": "Complex Antispam & AutoMod module for Discord JS",
   "main": "index.js",
   "scripts": {
