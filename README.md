@@ -14,7 +14,7 @@ A complex module with quick setup and different options to implement anti-spam a
 <br>**_This version of the package will only support discord.js v13_**
 <br>
 
-#### You can visit the [website Documentation](https://devraelfreeze.github.io/discordjs-antispam/) to learn more about the module.
+#### You can visit the [website Documentation](https://devrael1.github.io/discordjs-antispam/#/) to learn more about the module.
 
 ### ⚠️ This package support multi-guilds !
 
