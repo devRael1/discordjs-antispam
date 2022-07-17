@@ -202,7 +202,6 @@ const LogsManager = require('./lib/logs');
 /**
  * Cached message.
  * @typedef CachedMessage
- *
  * @property {Snowflake} messageID The ID of the message.
  * @property {Snowflake} guildID The ID of the guild where the message was sent.
  * @property {Snowflake} authorID The ID of the author of the message.
@@ -212,12 +211,20 @@ const LogsManager = require('./lib/logs');
  */
 
 /**
+ * Cached Members
+ * @typedef CachedMembers
+ * @property {Snowflake} guildID The ID of the guild where the member send a message.
+ * @property {Snowflake} memberID The ID of the member.
+ */
+
+/**
  * Cache data for the AntiSpamClient
  * Cache is unique per guild.
  * Use Guild ID as key.
  * @typedef AntiSpamCache
  * @key {Snowflake} guildID The ID of the guild.
  * @property {CachedMessage[]} messages Array of cached messages, used to detect spam.
+ * @property {CachedMembers[]} members Array of members IDs who have sent a message.
  */
 
 // noinspection JSCheckFunctionSignatures
@@ -344,7 +351,8 @@ class AntiSpamClient extends EventEmitter {
          * @type {Collection<Snowflake, AntiSpamCache>}
          * // Structure:
          * guild_ID: {
-            messages: []
+            messages: [],
+            members: []
             }
          */
         this.cache = new Collection();
@@ -389,7 +397,8 @@ class AntiSpamClient extends EventEmitter {
     async getCache (guildID) {
         if (!this.cache.has(guildID)) {
             await this.cache.set(guildID, {
-                messages: []
+                messages: [],
+                members: []
             });
         }
         return this.cache.get(guildID);
@@ -409,6 +418,10 @@ class AntiSpamClient extends EventEmitter {
             channelID: message.channel.id,
             content: message.content,
             sentTimestamp: message.createdTimestamp
+        });
+        cache.members.push({
+            guildID: message.guild.id,
+            memberID: message.author.id,
         });
         await this.cache.set(message.guild.id, cache);
         return this.cache.get(message.guild.id);
@@ -508,106 +521,112 @@ class AntiSpamClient extends EventEmitter {
         const can = await this.canRun(message, options);
         if (!can) return false;
 
-        const checkSpamMessages = async (checkDuplicates) => {
+        const checkSpamMessages = async (checkDuplicates, msg) => {
             const time = checkDuplicates ? options.antispamFilter.maxDuplicatesInterval : options.antispamFilter.maxInterval;
             setTimeout(async () => {
-                const cache = await this.getCache(message.guild.id);
+                const cache = await this.getCache(msg.guild.id);
 
-                const cachedMessages = cache.messages.filter((m) => m.authorID === message.author.id && m.guildID === message.guild.id);
-                const duplicateMatches = cachedMessages.filter((m) => m.content === message.content && (m.sentTimestamp > (message.createdTimestamp - options.antispamFilter.maxDuplicatesInterval)));
+                const cachedMessages = cache.messages.filter((m) => m.authorID === msg.author.id && m.guildID === msg.guild.id);
+                const duplicateMatches = cachedMessages.filter((m) => m.content === msg.content && (m.sentTimestamp > (msg.createdTimestamp - options.antispamFilter.maxDuplicatesInterval)));
 
                 /**
                  * Duplicate messages sent before the threshold is triggered
                  * @type {CachedMessage[]}
                  */
                 const spamOtherDuplicates = []
-                if (checkDuplicates && duplicateMatches.length > 0) {
+                if (duplicateMatches.length > 0) {
                     let rowBroken = false
                     cachedMessages.sort((a, b) => b.sentTimestamp - a.sentTimestamp).forEach(element => {
                         if (rowBroken) return;
                         if (element.content !== duplicateMatches[0].content) rowBroken = true;
                         else spamOtherDuplicates.push(element);
-                    })
+                    });
                 }
 
                 const spamMatches = cachedMessages.filter((m) => m.sentTimestamp > (cachedMessages[0].sentTimestamp - options.antispamFilter.maxInterval));
                 let sanctioned = false;
 
                 /** BAN SANCTION */
-                if (spamMatches.length >= options.antispamFilter.thresholds.ban) {
+                if (spamMatches.length >= options.antispamFilter.thresholds.ban || duplicateMatches.length >= options.antispamFilter.thresholds.ban) {
                     const userCanBeBanned = options.enable.ban && !sanctioned;
                     if ((userCanBeBanned && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.ban)) {
-                        this.emit('spamThresholdBan', message.member, false);
-                        await this.sanctions.appliedSanction(this.types_sanction.ban, message, 'Spamming', [...duplicateMatches, ...spamOtherDuplicates], options);
-                        this.emit('banAdd', message.member, 'Spamming Duplicate Messages');
+                        this.emit('spamThresholdBan', msg.member, false);
+                        await this.sanctions.appliedSanction(this.types_sanction.ban, msg, 'Spamming Duplicate Messages', [...duplicateMatches, ...spamOtherDuplicates], options);
+                        this.emit('banAdd', msg.member, 'Spamming Duplicate Messages');
                         sanctioned = true;
-                    } else if ((userCanBeBanned && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.ban)) {
-                        this.emit('spamThresholdBan', message.member, false);
-                        await this.sanctions.appliedSanction(this.types_sanction.ban, message, 'Spamming', spamMatches, options);
-                        this.emit('banAdd', message.member, 'Spamming');
+                    } else if ((userCanBeBanned && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.ban) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.ban)) {
+                        this.emit('spamThresholdBan', msg.member, false);
+                        await this.sanctions.appliedSanction(this.types_sanction.ban, msg, 'Spamming', spamMatches, options);
+                        this.emit('banAdd', msg.member, 'Spamming');
                         sanctioned = true;
                     }
                 }
 
                 /** KICK SANCTION */
-                if (spamMatches.length >= options.antispamFilter.thresholds.kick) {
+                if (spamMatches.length >= options.antispamFilter.thresholds.kick || duplicateMatches.length >= options.antispamFilter.maxDuplicates.kick) {
                     if (sanctioned) return sanctioned;
                     const userCanBeKicked = options.enable.kick && !sanctioned;
                     if ((userCanBeKicked && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.kick)) {
-                        this.emit('spamThresholdKick', message.member, true);
-                        await this.sanctions.appliedSanction(this.types_sanction.kick, message, 'Spamming', [...duplicateMatches, ...spamOtherDuplicates], options);
-                        this.emit('kickAdd', message.member, 'Spamming Duplicate Messages');
+                        this.emit('spamThresholdKick', msg.member, true);
+                        await this.sanctions.appliedSanction(this.types_sanction.kick, msg, 'Spamming Duplicate Messages', [...duplicateMatches, ...spamOtherDuplicates], options);
+                        this.emit('kickAdd', msg.member, 'Spamming Duplicate Messages');
                         sanctioned = true;
-                    } else if ((userCanBeKicked && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.kick)) {
-                        this.emit('spamThresholdKick', message.member, false);
-                        await this.sanctions.appliedSanction(this.types_sanction.kick, message, 'Spamming', spamMatches, options);
-                        this.emit('kickAdd', message.member, 'Spamming');
+                    } else if ((userCanBeKicked && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.kick) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.kick)) {
+                        this.emit('spamThresholdKick', msg.member, false);
+                        await this.sanctions.appliedSanction(this.types_sanction.kick, msg, 'Spamming', spamMatches, options);
+                        this.emit('kickAdd', msg.member, 'Spamming');
                         sanctioned = true;
                     }
                 }
 
                 /** MUTE SANCTION */
-                if (spamMatches.length >= options.antispamFilter.thresholds.mute) {
+                if (spamMatches.length >= options.antispamFilter.thresholds.mute || duplicateMatches.length >= options.antispamFilter.maxDuplicates.mute) {
                     if (sanctioned) return sanctioned;
                     const userCanBeMuted = options.enable.mute && !sanctioned;
                     if ((userCanBeMuted && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.mute)) {
-                        this.emit('spamThresholdMute', message.member, true);
-                        await this.sanctions.appliedSanction(this.types_sanction.mute, message, 'Spamming',[...duplicateMatches, ...spamOtherDuplicates], options);
-                        this.emit('muteAdd', message.member, 'Spamming Duplicate Messages');
+                        this.emit('spamThresholdMute', msg.member, true);
+                        await this.sanctions.appliedSanction(this.types_sanction.mute, msg, 'Spamming Duplicate Messages',[...duplicateMatches, ...spamOtherDuplicates], options);
+                        this.emit('muteAdd', msg.member, 'Spamming Duplicate Messages');
                         sanctioned = true;
-                    } else if ((userCanBeMuted && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.mute)) {
-                        this.emit('spamThresholdMute', message.member, false);
-                        await this.sanctions.appliedSanction(this.types_sanction.mute, message, 'Spamming', spamMatches, options);
-                        this.emit('muteAdd', message.member, 'Spamming');
+                    } else if ((userCanBeMuted && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.mute) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.mute)) {
+                        this.emit('spamThresholdMute', msg.member, false);
+                        await this.sanctions.appliedSanction(this.types_sanction.mute, msg, 'Spamming', spamMatches, options);
+                        this.emit('muteAdd', msg.member, 'Spamming');
                         sanctioned = true;
                     }
                 }
 
                 /** WARN SANCTION */
-                if (spamMatches.length >= options.antispamFilter.thresholds.warn) {
+                if (spamMatches.length >= options.antispamFilter.thresholds.warn || duplicateMatches.length >= options.antispamFilter.maxDuplicates.warn) {
                     if (sanctioned) return sanctioned;
                     const userCanBeWarned = options.enable.warn && !sanctioned;
                     if ((userCanBeWarned && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.warn)) {
-                        this.emit('spamThresholdWarn', message.member, true);
-                        await this.sanctions.appliedSanction(this.types_sanction.warn, message, 'Spamming', [...duplicateMatches, ...spamOtherDuplicates], options);
-                        this.emit('warnAdd', message.member, 'Spamming Duplicate Messages');
+                        this.emit('spamThresholdWarn', msg.member, true);
+                        await this.sanctions.appliedSanction(this.types_sanction.warn, msg, 'Spamming Duplicate Messages', [...duplicateMatches, ...spamOtherDuplicates], options);
+                        this.emit('warnAdd', msg.member, 'Spamming Duplicate Messages');
                         sanctioned = true;
-                    } else if ((userCanBeWarned && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.warn)) {
-                        this.emit('spamThresholdWarn', message.member, false);
-                        await this.sanctions.appliedSanction(this.types_sanction.warn, message, 'Spamming', spamMatches, options);
-                        this.emit('warnAdd', message.member, 'Spamming');
+                    } else if ((userCanBeWarned && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.warn) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.warn)) {
+                        this.emit('spamThresholdWarn', msg.member, false);
+                        await this.sanctions.appliedSanction(this.types_sanction.warn, msg, 'Spamming', spamMatches, options);
+                        this.emit('warnAdd', msg.member, 'Spamming');
                         sanctioned = true;
                     }
                 }
-                if (!checkDuplicates) this.cache.set(message.guild.id, {messages: []}); // Reset cache if we don't check for duplicates
+                // Reset cache if we don't check for duplicates
+                if (!checkDuplicates) {
+                    cache.messages = cache.messages.filter(m => m.authorID !== msg.author.id && m.guildID === msg.guild.id);
+                    await this.cache.set(msg.guild.id, cache);
+                }
                 return sanctioned;
             }, time);
         }
 
         // Run function to get all messages and check if spam is triggered
-        if (this.cache.get(message.guild.id).messages.length === 1) {
-            await checkSpamMessages(true);
-            await checkSpamMessages(false);
+        // Add message & member to cache if not already in cache
+        const cache = this.cache.get(message.guild.id);
+        if (cache.messages.filter(m => m.authorID === message.author.id).length <= 1) {
+            await checkSpamMessages(true, message);
+            await checkSpamMessages(false, message);
         }
     }
 
