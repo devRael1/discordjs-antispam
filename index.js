@@ -564,52 +564,55 @@ class AntiSpamClient extends EventEmitter {
 
                 /** KICK SANCTION */
                 if (spamMatches.length >= options.antispamFilter.thresholds.kick || duplicateMatches.length >= options.antispamFilter.maxDuplicates.kick) {
-                    if (sanctioned) return sanctioned;
-                    const userCanBeKicked = options.enable.kick && !sanctioned;
-                    if ((userCanBeKicked && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.kick)) {
-                        this.emit('spamThresholdKick', msg.member, true);
-                        await this.sanctions.appliedSanction(this.types_sanction.kick, msg, 'Spamming Duplicate Messages', [...duplicateMatches, ...spamOtherDuplicates], options);
-                        this.emit('kickAdd', msg.member, 'Spamming Duplicate Messages');
-                        sanctioned = true;
-                    } else if ((userCanBeKicked && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.kick) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.kick)) {
-                        this.emit('spamThresholdKick', msg.member, false);
-                        await this.sanctions.appliedSanction(this.types_sanction.kick, msg, 'Spamming', spamMatches, options);
-                        this.emit('kickAdd', msg.member, 'Spamming');
-                        sanctioned = true;
+                    if (!sanctioned) {
+                        const userCanBeKicked = options.enable.kick && !sanctioned;
+                        if ((userCanBeKicked && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.kick)) {
+                            this.emit('spamThresholdKick', msg.member, true);
+                            await this.sanctions.appliedSanction(this.types_sanction.kick, msg, 'Spamming Duplicate Messages', [...duplicateMatches, ...spamOtherDuplicates], options);
+                            this.emit('kickAdd', msg.member, 'Spamming Duplicate Messages');
+                            sanctioned = true;
+                        } else if ((userCanBeKicked && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.kick) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.kick)) {
+                            this.emit('spamThresholdKick', msg.member, false);
+                            await this.sanctions.appliedSanction(this.types_sanction.kick, msg, 'Spamming', spamMatches, options);
+                            this.emit('kickAdd', msg.member, 'Spamming');
+                            sanctioned = true;
+                        }
                     }
                 }
 
                 /** MUTE SANCTION */
                 if (spamMatches.length >= options.antispamFilter.thresholds.mute || duplicateMatches.length >= options.antispamFilter.maxDuplicates.mute) {
-                    if (sanctioned) return sanctioned;
-                    const userCanBeMuted = options.enable.mute && !sanctioned;
-                    if ((userCanBeMuted && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.mute)) {
-                        this.emit('spamThresholdMute', msg.member, true);
-                        await this.sanctions.appliedSanction(this.types_sanction.mute, msg, 'Spamming Duplicate Messages',[...duplicateMatches, ...spamOtherDuplicates], options);
-                        this.emit('muteAdd', msg.member, 'Spamming Duplicate Messages');
-                        sanctioned = true;
-                    } else if ((userCanBeMuted && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.mute) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.mute)) {
-                        this.emit('spamThresholdMute', msg.member, false);
-                        await this.sanctions.appliedSanction(this.types_sanction.mute, msg, 'Spamming', spamMatches, options);
-                        this.emit('muteAdd', msg.member, 'Spamming');
-                        sanctioned = true;
+                    if (!sanctioned) {
+                        const userCanBeMuted = options.enable.mute && !sanctioned;
+                        if ((userCanBeMuted && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.mute)) {
+                            this.emit('spamThresholdMute', msg.member, true);
+                            await this.sanctions.appliedSanction(this.types_sanction.mute, msg, 'Spamming Duplicate Messages',[...duplicateMatches, ...spamOtherDuplicates], options);
+                            this.emit('muteAdd', msg.member, 'Spamming Duplicate Messages');
+                            sanctioned = true;
+                        } else if ((userCanBeMuted && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.mute) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.mute)) {
+                            this.emit('spamThresholdMute', msg.member, false);
+                            await this.sanctions.appliedSanction(this.types_sanction.mute, msg, 'Spamming', spamMatches, options);
+                            this.emit('muteAdd', msg.member, 'Spamming');
+                            sanctioned = true;
+                        }
                     }
                 }
 
                 /** WARN SANCTION */
                 if (spamMatches.length >= options.antispamFilter.thresholds.warn || duplicateMatches.length >= options.antispamFilter.maxDuplicates.warn) {
-                    if (sanctioned) return sanctioned;
-                    const userCanBeWarned = options.enable.warn && !sanctioned;
-                    if ((userCanBeWarned && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.warn)) {
-                        this.emit('spamThresholdWarn', msg.member, true);
-                        await this.sanctions.appliedSanction(this.types_sanction.warn, msg, 'Spamming Duplicate Messages', [...duplicateMatches, ...spamOtherDuplicates], options);
-                        this.emit('warnAdd', msg.member, 'Spamming Duplicate Messages');
-                        sanctioned = true;
-                    } else if ((userCanBeWarned && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.warn) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.warn)) {
-                        this.emit('spamThresholdWarn', msg.member, false);
-                        await this.sanctions.appliedSanction(this.types_sanction.warn, msg, 'Spamming', spamMatches, options);
-                        this.emit('warnAdd', msg.member, 'Spamming');
-                        sanctioned = true;
+                    if (!sanctioned) {
+                        const userCanBeWarned = options.enable.warn && !sanctioned;
+                        if ((userCanBeWarned && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.warn)) {
+                            this.emit('spamThresholdWarn', msg.member, true);
+                            await this.sanctions.appliedSanction(this.types_sanction.warn, msg, 'Spamming Duplicate Messages', [...duplicateMatches, ...spamOtherDuplicates], options);
+                            this.emit('warnAdd', msg.member, 'Spamming Duplicate Messages');
+                            sanctioned = true;
+                        } else if ((userCanBeWarned && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.warn) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.warn)) {
+                            this.emit('spamThresholdWarn', msg.member, false);
+                            await this.sanctions.appliedSanction(this.types_sanction.warn, msg, 'Spamming', spamMatches, options);
+                            this.emit('warnAdd', msg.member, 'Spamming');
+                            sanctioned = true;
+                        }
                     }
                 }
                 // Reset cache if we don't check for duplicates
