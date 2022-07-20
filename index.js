@@ -466,12 +466,11 @@ class AntiSpamClient extends EventEmitter {
                     _channel = channel;
                 }
             }));
-            await _channel.bulkDelete(_messages).catch(err => {
-                if (err && options.debug === true) return this.logs.logsError('Discord AntiSpam (clearSpamMessages#failed): The message(s) couldn\'t be deleted', options);
-            });
+            if (_channel) await _channel.bulkDelete(_messages);
         } catch (e) {
             if (options.debug) {
                 await this.logs.logsError('Discord AntiSpam (clearSpamMessages#failed): The message(s) couldn\'t be deleted!', options);
+                console.error(e);
             }
         }
     }
