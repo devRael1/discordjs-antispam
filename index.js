@@ -16,23 +16,27 @@ const LinksFilterSystem = require('./lib/links');
 const SanctionsManager = require('./lib/sanctions');
 const LogsManager = require('./lib/logs');
 
+/** -------------- IGNORE FUNCTIONS -------------- */
+
 /**
  * @callback IgnoreMemberFunction
  * @param {GuildMember} member The member to check
- * @returns {Promise<boolean>} Whether the member should be ignored
+ * @returns {boolean} Whether the member should be ignored
  */
 
 /**
  * @callback IgnoreRoleFunction
  * @param {Collection<Snowflake, Role>} role The role to check
- * @returns {Promise<boolean>} Whether the user should be ignored
+ * @returns {boolean} Whether the user should be ignored
  */
 
 /**
  * @callback IgnoreChannelFunction
  * @param {TextChannel} channel The channel to check
- * @returns {Promise<boolean>} Whether the channel should be ignored
+ * @returns {boolean} Whether the channel should be ignored
  */
+
+/** -------------- EVENTS -------------- */
 
 /**
  * Emitted when a member gets warned.
@@ -54,12 +58,43 @@ const LogsManager = require('./lib/logs');
  * @property {GuildMember} member The member that was muted.
  * @property {string} reason The reason for the mute.
  */
+
 /**
  * Emitted when a member gets banned.
  * @event AntiSpamClient#banAdd
  * @property {GuildMember} member The member that was banned.
  * @property {string} reason The reason for the ban.
  */
+
+/**
+ * Emitted trigger event when member spam / duplicates spam and he will be warned.
+ * @event AntiSpamClient#spamThresholdWarn
+ * @property {GuildMember} member The member that will be warned.
+ * @property {boolean} duplicateMessages Whether the member sent duplicate messages.
+ */
+
+/**
+ * Emitted trigger event when member spam / duplicates spam and he will be muted.
+ * @event AntiSpamClient#spamThresholdMute
+ * @property {GuildMember} member The member that will be muted.
+ * @property {boolean} duplicateMessages Whether the member sent duplicate messages.
+ */
+
+/**
+ * Emitted trigger event when member spam / duplicates spam and he will be kicked.
+ * @event AntiSpamClient#spamThresholdKick
+ * @property {GuildMember} member The member that will be kicked.
+ * @property {boolean} duplicateMessages Whether the member sent duplicate messages.
+ */
+
+/**
+ * Emitted trigger event when member spam / duplicates spam and he will be banned.
+ * @event AntiSpamClient#spamThresholdBan
+ * @property {GuildMember} member The member that will be banned.
+ * @property {boolean} duplicateMessages Whether the member sent duplicate messages.
+ */
+
+/** -------------- TYPE DEFINITIONS -------------- */
 
 /**
  * Type of Sanction to applied
@@ -173,6 +208,8 @@ const LogsManager = require('./lib/logs');
  * @property {boolean} [ban=true] Whether to enable bans.
  */
 
+/** -------------- ANTISPAM CLIENT OPTIONS -------------- */
+
 /**
  * Options for the AntiSpam client
  * @typedef AntiSpamClientOptions
@@ -199,6 +236,8 @@ const LogsManager = require('./lib/logs');
  * @property {boolean} [debug=false] Whether to run the module in debug mode.
  * @property {boolean} [removeMessages=true] Whether to delete user messages after a sanction.
  */
+
+/** -------------- CACHE -------------- */
 
 /**
  * Cached message.
@@ -487,15 +526,15 @@ class AntiSpamClient extends EventEmitter {
             || (message.guild.ownerId === message.author.id && !options.debug)
             || (options.ignore.bots && message.author.bot)) return false;
 
-        const isMemberIgnored = typeof options.ignore.members === 'function' ? await options.ignore.members(message.member) : options.ignore.members.includes(message.author.id)
+        const isMemberIgnored = typeof options.ignore.members === 'function' ? options.ignore.members(message.member) : options.ignore.members.includes(message.author.id)
         if (isMemberIgnored) return false;
 
-        const isChannelIgnored = typeof options.ignore.channels === 'function' ? await options.ignore.channels(message.channel) : options.ignore.channels.includes(message.channel.id)
+        const isChannelIgnored = typeof options.ignore.channels === 'function' ? options.ignore.channels(message.channel) : options.ignore.channels.includes(message.channel.id)
         if (isChannelIgnored) return false;
 
         const member = message.member || await message.guild.members.cache.get(message.author.id);
 
-        const memberHasIgnoredRoles = typeof options.ignore.roles === 'function' ? await options.ignore.roles(member.roles.cache) : options.ignore.roles.some((r) => member.roles.cache.has(r))
+        const memberHasIgnoredRoles = typeof options.ignore.roles === 'function' ? options.ignore.roles(member.roles.cache) : options.ignore.roles.some((r) => member.roles.cache.has(r))
         if (memberHasIgnoredRoles) return false;
 
         return !options.ignore.permissions.some((permission) => member.permissions.has(permission));
