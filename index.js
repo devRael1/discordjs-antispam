@@ -1,5 +1,6 @@
-const { EventEmitter } = require('events');
-const { Client,
+const {EventEmitter} = require('events');
+const {
+    Client,
     Message,
     GuildMember,
     Snowflake,
@@ -8,7 +9,7 @@ const { Client,
     MessageEmbed,
     TextChannel,
     PermissionString,
-    MessageMentions: { USERS_PATTERN, EVERYONE_PATTERN, ROLES_PATTERN  }
+    MessageMentions: {USERS_PATTERN, EVERYONE_PATTERN, ROLES_PATTERN}
 } = require('discord.js');
 const WordsFilterSystem = require('./lib/words');
 const LinksFilterSystem = require('./lib/links');
@@ -234,7 +235,7 @@ class AntiSpamClient extends EventEmitter {
      * @param {Client} client Discord Client Instance
      * @param {AntiSpamClientOptions} options The options for this AntiSpam client instance
      */
-    constructor (client, options) {
+    constructor(client, options) {
         super();
 
         /**
@@ -386,15 +387,16 @@ class AntiSpamClient extends EventEmitter {
      * Return default options for this AntiSpam client instance
      * @returns {AntiSpamClientOptions}
      */
-    async getDefaultOptions () {
+    async getDefaultOptions() {
         return this._defaultOptions;
     }
+
     /**
      * Get cache for a guild
      * @param {string} guildID Guild ID
      * @returns {Promise<AntiSpamCache>}
      */
-    async getCache (guildID) {
+    async getCache(guildID) {
         if (!this.cache.has(guildID)) {
             await this.cache.set(guildID, {
                 messages: [],
@@ -409,7 +411,7 @@ class AntiSpamClient extends EventEmitter {
      * @param {Message} message Message object
      * @returns {Promise<AntiSpamCache>}
      */
-    async addMessagesCache (message) {
+    async addMessagesCache(message) {
         const cache = await this.getCache(message.guild.id);
         cache.messages.push({
             messageID: message.id,
@@ -432,7 +434,7 @@ class AntiSpamClient extends EventEmitter {
      * @param {string} guildID Guild ID
      * @returns {AntiSpamClientOptions}
      */
-    async getGuildOptions (guildID) {
+    async getGuildOptions(guildID) {
         return this.guildOptions.get(guildID);
     }
 
@@ -442,7 +444,7 @@ class AntiSpamClient extends EventEmitter {
      * @param {AntiSpamClientOptions} options The options for the guild
      * @returns {AntiSpamClientOptions}
      */
-    async setGuildOptions (guildID, options) {
+    async setGuildOptions(guildID, options) {
         this.guildOptions.set(guildID, options);
         return this.guildOptions.get(guildID);
     }
@@ -457,16 +459,14 @@ class AntiSpamClient extends EventEmitter {
     async clearSpamMessages (messages, options) {
         try {
             let _messages = [];
-            let _channel;
-            await Promise.all(messages.map(async (message) => {
-                const channel = await this.client.channels.cache.get(message.channelID)
+            const channel = await this.client.channels.cache.get(messages[0]?.channelID);
+            messages.forEach(message => {
                 if (channel) {
-                    const msg = await channel.messages.cache.get(message.messageID);
-                    if (msg && msg.deletable) _messages.push(msg);
-                    _channel = channel;
+                    const msg = channel.messages.cache.get(message.messageID);
+                    if (msg?.deletable) _messages.push(msg);
                 }
-            }));
-            if (_channel) await _channel.bulkDelete(_messages);
+            });
+            if (channel) await channel.bulkDelete(_messages);
         } catch (e) {
             if (options.debug) {
                 await this.logs.logsError('Discord AntiSpam (clearSpamMessages#failed): The message(s) couldn\'t be deleted!', options);
@@ -482,7 +482,7 @@ class AntiSpamClient extends EventEmitter {
      * @param {AntiSpamClientOptions} options Options
      * @returns {Promise<boolean>}
      */
-    async canRun (message, options) {
+    async canRun(message, options) {
         if (!message.guild || message.author.id === this.client.user.id
             || (message.guild.ownerId === message.author.id && !options.debug)
             || (options.ignore.bots && message.author.bot)) return false;
@@ -510,7 +510,7 @@ class AntiSpamClient extends EventEmitter {
      * 	antiSpam.messageAntiSpam(msg);
      * });
      */
-    async messageAntiSpam (message) {
+    async messageAntiSpam(message) {
         // Guild Options is priority
         const options = await this.getGuildOptions(message.guild.id) || this.options;
         if (!options) return this.logs.logsVerbose('Discord AntiSpam (messageAntiSpam#failed): No options found!', options);
@@ -520,7 +520,7 @@ class AntiSpamClient extends EventEmitter {
         const can = await this.canRun(message, options);
         if (!can) return false;
 
-        const checkSpamMessages = async (checkDuplicates, msg) => {
+        const checkSpamMessages = (checkDuplicates, msg) => {
             const time = checkDuplicates ? options.antispamFilter.maxDuplicatesInterval : options.antispamFilter.maxInterval;
             setTimeout(async () => {
                 const cache = await this.getCache(msg.guild.id);
@@ -532,9 +532,9 @@ class AntiSpamClient extends EventEmitter {
                  * Duplicate messages sent before the threshold is triggered
                  * @type {CachedMessage[]}
                  */
-                const spamOtherDuplicates = []
+                const spamOtherDuplicates = [];
                 if (duplicateMatches.length > 0) {
-                    let rowBroken = false
+                    let rowBroken = false;
                     cachedMessages.sort((a, b) => b.sentTimestamp - a.sentTimestamp).forEach(element => {
                         if (rowBroken) return;
                         if (element.content !== duplicateMatches[0].content) rowBroken = true;
@@ -585,7 +585,7 @@ class AntiSpamClient extends EventEmitter {
                         const userCanBeMuted = options.enable.mute && !sanctioned;
                         if ((userCanBeMuted && checkDuplicates) && (duplicateMatches.length >= options.antispamFilter.maxDuplicates.mute)) {
                             this.emit('spamThresholdMute', msg.member, true);
-                            await this.sanctions.appliedSanction(this.types_sanction.mute, msg, 'Spamming Duplicate Messages',[...duplicateMatches, ...spamOtherDuplicates], options);
+                            await this.sanctions.appliedSanction(this.types_sanction.mute, msg, 'Spamming Duplicate Messages', [...duplicateMatches, ...spamOtherDuplicates], options);
                             this.emit('muteAdd', msg.member, 'Spamming Duplicate Messages');
                             sanctioned = true;
                         } else if ((userCanBeMuted && !checkDuplicates) && (spamMatches.length >= options.antispamFilter.thresholds.mute) && (duplicateMatches.length < options.antispamFilter.maxDuplicates.mute)) {
@@ -627,8 +627,8 @@ class AntiSpamClient extends EventEmitter {
         // Add message & member to cache if not already in cache
         const cache = this.cache.get(message.guild.id);
         if (cache.messages.filter(m => m.authorID === message.author.id).length <= 1) {
-            await checkSpamMessages(true, message);
-            await checkSpamMessages(false, message);
+            checkSpamMessages(true, message);
+            checkSpamMessages(false, message);
         }
     }
 
@@ -822,7 +822,7 @@ class AntiSpamClient extends EventEmitter {
      * 	antiSpam.userLeave(member);
      * });
      */
-    async userLeave (member) {
+    async userLeave(member) {
         const cache = await this.getCache(member.guild.id);
         cache.messages = cache.messages.filter((m) => m.authorID !== member.user.id);
         await this.cache.set(member.guild.id, cache);
@@ -832,7 +832,7 @@ class AntiSpamClient extends EventEmitter {
     /**
      * Reset the cache of this AntiSpam client instance.
      */
-    async resetGuild (guildID) {
+    async resetGuild(guildID) {
         let cache = {messages: []};
         await this.cache.set(guildID, cache);
     }
@@ -841,7 +841,7 @@ class AntiSpamClient extends EventEmitter {
      * Reset the cache of this AntiSpam client instance.
      * @returns {Promise<void>}
      */
-    async resetAllCache () {
+    async resetAllCache() {
         this.cache = new Collection();
         return this.cache;
     }
